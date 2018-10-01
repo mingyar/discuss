@@ -3,6 +3,8 @@ defmodule Discuss.TopicController do
 
     alias Discuss.Topic
 
+    plug Discuss.Plugs.RequireAuth when action in [:new, :create, :edit, :update, :delete]
+
     def index(conn, _params) do
         topics = Repo.all(Topic)
 
@@ -17,6 +19,9 @@ defmodule Discuss.TopicController do
 
     @spec create(any(), map()) :: nil
     def create(conn, %{"topic" => topic}) do
+        # conn.assigns[:user]
+        # conn.assigns.user
+
         changeset = Topic.changeset(%Topic{}, topic)
 
         case Repo.insert(changeset) do
