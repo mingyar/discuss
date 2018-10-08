@@ -22,7 +22,11 @@ defmodule Discuss.TopicController do
         # conn.assigns[:user]
         # conn.assigns.user
 
-        changeset = Topic.changeset(%Topic{}, topic)
+        #changeset = Topic.changeset(%Topic{}, topic)
+
+        changeset = conn.assigns.user
+            |> build_assoc(:topics)
+            |> Topic.changeset(topic)
 
         case Repo.insert(changeset) do
             {:ok, _topic} ->
