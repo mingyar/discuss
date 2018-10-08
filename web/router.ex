@@ -26,7 +26,7 @@ defmodule Discuss.Router do
     resources "/", TopicController
 
   end
-
+#
   scope "/auth", Discuss do
     pipe_through :browser
 
