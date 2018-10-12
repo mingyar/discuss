@@ -27,6 +27,11 @@ config :discuss, Discuss.Repo,
   url: System.get_env("DATABASE_URL"),
   pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
   ssl: true
+
+  config :ueberauth, Ueberauth.Strategy.Github.OAuth,
+    client_id: "c826f63c9089897fab09",
+    client_secret: "f4917f321fc0ed3d06dea3685bf6487eab0c58c0"
+    
 # ## SSL Support
 #
 # To get SSL working, you will need to add the `https` key

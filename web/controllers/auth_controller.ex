@@ -7,7 +7,6 @@ defmodule Discuss.AuthController do
   def callback(%{assigns: %{ueberauth_auth: auth}} = conn, _params) do
     user_params = %{token: auth.credentials.token, email: auth.info.email, provider: "github"}
     changeset = User.changeset(%User{}, user_params)
-
     signin(conn, changeset)
   end
 
