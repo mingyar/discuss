@@ -3,5 +3,7 @@ defmodule Discuss.PageController do
 
   def index(conn, _params) do
     render conn, "index.html"
+    IO.puts "Before signin"
+
   end
 end

@@ -54,3 +54,7 @@ config :discuss, Discuss.Repo,
   database: "discuss_dev",
   hostname: "localhost",
   pool_size: 10
+
+  config :ueberauth, Ueberauth.Strategy.Github.OAuth,
+    client_id: "7f6b6a22447f8288799f",
+    client_secret: "8f47b4d523e082300af16a91a899d116ee4e2da3"
