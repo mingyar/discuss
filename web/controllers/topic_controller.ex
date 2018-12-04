@@ -18,7 +18,6 @@ defmodule Discuss.TopicController do
       render conn, "show.html", topic: topic
     end
 
-
     def new(conn, _params) do
         changeset = Topic.changeset(%Topic{}, %{})
 
