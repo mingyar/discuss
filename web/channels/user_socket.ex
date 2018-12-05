@@ -6,7 +6,9 @@ defmodule Discuss.UserSocket do
   ##get "/comments/:id", CommentController, :join, :handle_in
 
   ## Transports
-  transport :websocket, Phoenix.Transports.WebSocket
+  transport :websocket,
+            Phoenix.Transports.WebSocket,
+            check_origin: ["//0.0.0.0:4000", "//localhost", "//discuss-evr.herokuapp.com"]
 
   def connect(%{"token" => token}, socket) do
     case Phoenix.Token.verify(socket, "key", token) do
