@@ -8,7 +8,7 @@ defmodule Discuss.UserSocket do
   ## Transports
   transport :websocket,
             Phoenix.Transports.WebSocket,
-            check_origin: ["//0.0.0.0:4000", "//localhost", "//discuss-evr.herokuapp.com"]
+            check_origin: ["//0.0.0.0:4000", "//localhost", "//discuss-evr.herokuapp.com", "//ec2-54-243-147-162.compute-1.amazonaws.com"]
 
   def connect(%{"token" => token}, socket) do
     case Phoenix.Token.verify(socket, "key", token) do
