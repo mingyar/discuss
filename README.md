@@ -1,3 +1,7 @@
+# Check this out
+
+You can check this project live working on [`https://discuss-evr.herokuapp.com`](here)
+
 # Discuss
 
 To start your Phoenix app:
