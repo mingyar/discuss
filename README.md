@@ -1,6 +1,6 @@
 # Check this out
 
-You can check this project live working on [`https://discuss-evr.herokuapp.com`](here)
+You can check this project live working on [`here`](https://discuss-evr.herokuapp.com)
 
 # Discuss
 
