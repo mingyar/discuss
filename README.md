@@ -1,3 +1,5 @@
+[![Build Status](https://semaphoreci.com/api/v1/mingyar/discuss-elixir-bootcamp/branches/master/badge.svg)](https://semaphoreci.com/mingyar/discuss-elixir-bootcamp)
+
 # Check this out
 
 You can check this project live working on [`here`](https://discuss-evr.herokuapp.com)
