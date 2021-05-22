@@ -11,7 +11,23 @@ jobs:
 
     name: Build and test
     runs-on: ubuntu-latest
-
+    services:
+      postgres:
+        # Docker Hub image
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          DB: discuss_test
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+            # Maps tcp port 5432 on service container to the host
+          - 5432:5432
     steps:
     - uses: actions/checkout@v2
     - name: Set up Elixir
@@ -29,16 +45,4 @@ jobs:
       run: mix deps.get
     - name: Run tests
       run: mix test
-    - name: Setup PostgreSQL
-      # You may pin to the exact commit or the version.
-      # uses: Harmon758/postgresql-action@0be19fa37850b22cb4c9bbf28a03abbf44abd863
-      uses: Harmon758/postgresql-action@v1.0.0
-      with:
-          # Version of PostgreSQL to use
-          postgresql version: '11.5' # optional, default is latest
-          # POSTGRES_DB - name for the default database that is created
-          postgresql db: 'discuss_test' # optional, default is 
-          # POSTGRES_USER - create the specified user with superuser power
-          postgresql user: 'postgres' # optional, default is 
-          # POSTGRES_PASSWORD - superuser password
-          postgresql password: 'postgres' # optional, default is
+    
