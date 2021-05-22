@@ -1,5 +1,5 @@
 [![Build Status](https://semaphoreci.com/api/v1/mingyar/discuss-elixir-bootcamp/branches/master/badge.svg)](https://semaphoreci.com/mingyar/discuss-elixir-bootcamp)
-
+[![Elixir CI](https://github.com/mingyar/discuss-elixir-bootcamp/actions/workflows/elixir.yml/badge.svg?branch=master)](https://github.com/mingyar/discuss-elixir-bootcamp/actions/workflows/elixir.yml)
 # Check this out
 
 You can check this project live working on [`here`](https://discuss-evr.herokuapp.com)
