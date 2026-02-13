@@ -1,7 +1,7 @@
 defmodule Discuss.User do
   use Discuss.Web, :model
 
-  @derive {Poison.Encoder, only: [:email]}
+  @derive {Jason.Encoder, only: [:email]}
 
   schema "users" do
     field :email, :string

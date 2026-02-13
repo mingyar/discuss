@@ -4,16 +4,16 @@ defmodule Discuss do
   # See https://hexdocs.pm/elixir/Application.html
   # for more information on OTP Applications
   def start(_type, _args) do
-    import Supervisor.Spec
-
     # Define workers and child supervisors to be supervised
     children = [
       # Start the Ecto repository
-      supervisor(Discuss.Repo, []),
+      Discuss.Repo,
+      # Start the PubSub system
+      {Phoenix.PubSub, [name: Discuss.PubSub, adapter: Phoenix.PubSub.PG2]},
       # Start the endpoint when the application starts
-      supervisor(Discuss.Endpoint, []),
+      Discuss.Endpoint,
       # Start your own worker by calling: Discuss.Worker.start_link(arg1, arg2, arg3)
-      # worker(Discuss.Worker, [arg1, arg2, arg3]),
+      # {Discuss.Worker, [arg1, arg2, arg3]},
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

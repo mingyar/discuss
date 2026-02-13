@@ -1,7 +1,7 @@
 defmodule Discuss.Comment do
   use Discuss.Web, :model
 
-  @derive {Poison.Encoder, only: [:content, :user]}
+  @derive {Jason.Encoder, only: [:content, :user]}
 
   schema "comments" do
     field :content, :string

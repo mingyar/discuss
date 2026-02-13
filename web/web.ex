@@ -42,17 +42,24 @@ defmodule Discuss.Web do
 
   def view do
     quote do
-      use Phoenix.View, root: "web/templates"
-
       # Import convenience functions from controllers
-      import Phoenix.Controller, only: [get_flash: 2, view_module: 1]
+      import Phoenix.Controller, only: [get_flash: 2]
 
       # Use all HTML functionality (forms, tags, etc)
-      use Phoenix.HTML
+      import Phoenix.HTML
+      import Phoenix.HTML.Form
+      use PhoenixHTMLHelpers
 
       import Discuss.Router.Helpers
       import Discuss.ErrorHelpers
       import Discuss.Gettext
+      
+      # For template rendering - the old Phoenix.View.render/3 is now direct function calls
+      # But we need to support the old render(@view_module, @view_template, assigns) syntax
+      # So we provide a wrapper
+      def render(view_module, template_name, assigns) when is_atom(view_module) and is_binary(template_name) do
+        apply(view_module, :render, [template_name, assigns])
+      end
     end
   end
 

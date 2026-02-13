@@ -9,7 +9,7 @@ defmodule Discuss.Endpoint do
   # when deploying your static files in production.
   plug Plug.Static,
     at: "/", from: :discuss, gzip: false,
-    only: ~w(css fonts images js favicon.ico robots.txt)
+    only: ~w(assets fonts images favicon.ico robots.txt)
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
@@ -25,7 +25,7 @@ defmodule Discuss.Endpoint do
   plug Plug.Parsers,
     parsers: [:urlencoded, :multipart, :json],
     pass: ["*/*"],
-    json_decoder: Poison
+    json_decoder: Jason
 
   plug Plug.MethodOverride
   plug Plug.Head
