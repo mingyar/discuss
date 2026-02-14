@@ -5,7 +5,7 @@
 # Inside the script, you can read and write to any of your
 # repositories directly:
 #
-#     Discuss.Repo.insert!(%Discuss.SomeModel{})
+#     Discuss.Repo.insert!(%Discuss.SomeSchema{})
 #
 # We recommend using the bang functions (`insert!`, `update!`
-# and so on) as they will halt execution if something goes wrong.
+# and so on) as they will fail if something goes wrong.
