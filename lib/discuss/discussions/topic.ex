@@ -6,7 +6,7 @@ defmodule Discuss.Discussions.Topic do
     field :title, :string
 
     belongs_to :user, Discuss.Accounts.User
-    has_many :comments, Discuss.Discussions.Comment
+    has_many :comments, Discuss.Discussions.Comment, on_delete: :delete_all
 
     timestamps(type: :utc_datetime)
   end

@@ -3,7 +3,6 @@ defmodule Discuss.Accounts do
   The Accounts context — manages users and authentication.
   """
 
-  import Ecto.Query
   alias Discuss.Repo
   alias Discuss.Accounts.User
 

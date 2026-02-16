@@ -53,6 +53,9 @@ defmodule Discuss.Discussions do
   Deletes a topic.
   """
   def delete_topic(%Topic{} = topic) do
+    from(c in Comment, where: c.topic_id == ^topic.id)
+    |> Repo.delete_all()
+
     Repo.delete(topic)
   end
 
@@ -101,5 +104,9 @@ defmodule Discuss.Discussions do
   """
   def change_comment(%Comment{} = comment, attrs \\ %{}) do
     Comment.changeset(comment, attrs)
+  end
+
+  def get_comment!(id) do
+    Repo.get!(Comment, id)
   end
 end

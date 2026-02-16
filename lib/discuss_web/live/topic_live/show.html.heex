@@ -1,0 +1,96 @@
+<.header>
+  {@topic.title}
+  <:subtitle>
+    Created by {@topic.user.name || @topic.user.email} on {Calendar.strftime(
+      @topic.inserted_at,
+      "%B %d, %Y"
+    )}
+  </:subtitle>
+  <:actions>
+    <.link
+      :if={@current_user && @current_user.id == @topic.user_id}
+      patch={~p"/topics/#{@topic}/show/edit"}
+      phx-click={JS.push_focus()}
+    >
+      <.button>Edit topic</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<div class="mt-8">
+  <h2 class="text-2xl font-bold text-gray-900 mb-4">Comments</h2>
+
+  <div :if={@current_user} class="mb-8 bg-white shadow rounded-lg p-6">
+    <.simple_form for={@comment_form} phx-submit="save_comment">
+      <.input field={@comment_form[:content]} type="textarea" label="Add a comment" rows="3" />
+      <:actions>
+        <.button phx-disable-with="Posting...">Post Comment</.button>
+      </:actions>
+    </.simple_form>
+  </div>
+  
+<!-- Comments List -->
+  <div class="space-y-4">
+    <div
+      :for={{id, comment} <- @streams.comments}
+      id={id}
+      class="bg-white shadow rounded-lg p-6"
+    >
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-2">
+            <img
+              :if={comment.user.avatar_url}
+              src={comment.user.avatar_url}
+              alt={comment.user.name || comment.user.email}
+              class="w-8 h-8 rounded-full"
+            />
+            <span class="font-semibold text-gray-900">
+              {comment.user.name || comment.user.email}
+            </span>
+            <span class="text-sm text-gray-500">
+              {Calendar.strftime(comment.inserted_at, "%B %d, %Y at %I:%M %p")}
+            </span>
+          </div>
+          <p class="text-gray-700 whitespace-pre-wrap">{comment.content}</p>
+        </div>
+
+        <%!-- Comentar botão de delete até ter autenticação
+        <button
+          :if={@current_user && @current_user.id == comment.user_id}
+          phx-click="delete_comment"
+          phx-value-id={comment.id}
+          data-confirm="Are you sure?"
+          class="ml-4 text-red-600 hover:text-red-800"
+        >
+          Delete
+        </button>
+        --%>
+      </div>
+    </div>
+  </div>
+  
+<!-- lib/discuss_web/live/topic_live/show.html.heex -->
+  <!-- Linha ~74 - COMENTAR OU REMOVER -->
+  <%!--
+  <div :if={Enum.empty?(@streams.comments)} class="text-center py-12 text-gray-500">
+    No comments yet. Be the first to comment!
+  </div>
+  --%>
+</div>
+
+<.back navigate={~p"/topics"}>Back to topics</.back>
+
+<%!-- Comentar modal até ter autenticação
+<.modal :if={@live_action == :edit} id="topic-modal" show on_cancel={JS.patch(~p"/topics/#{@topic}")}>
+  <.live_component
+    module={DiscussWeb.TopicLive.FormComponent}
+    id={@topic.id}
+    title={@page_title}
+    action={@live_action}
+    topic={@topic}
+    current_user={@current_user}
+    patch={~p"/topics/#{@topic}"}
+  />
+</.modal>
+--%>

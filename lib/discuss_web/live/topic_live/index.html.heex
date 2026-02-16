@@ -1,0 +1,65 @@
+<.header>
+  Topics
+  <:actions>
+    <.link :if={@current_user} patch={~p"/topics/new"}>
+      <.button>New Topic</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<div class="mt-8 space-y-4">
+  <div
+    :for={{id, topic} <- @streams.topics}
+    id={id}
+    class="bg-white shadow rounded-lg p-6 hover:shadow-lg transition-shadow"
+  >
+    <div class="flex items-start justify-between">
+      <div class="flex-1">
+        <.link
+          navigate={~p"/topics/#{topic}"}
+          class="text-xl font-semibold text-gray-900 hover:text-blue-600"
+        >
+          {topic.title}
+        </.link>
+        <p class="mt-2 text-sm text-gray-600">
+          Created by {topic.user.name || topic.user.email} · {Calendar.strftime(
+            topic.inserted_at,
+            "%B %d, %Y"
+          )}
+        </p>
+      </div>
+
+      <div :if={@current_user && @current_user.id == topic.user_id} class="ml-4 flex gap-2">
+        <.link patch={~p"/topics/#{topic}/edit"}>
+          <.button size="sm" variant="secondary">Edit</.button>
+        </.link>
+        <.button
+          size="sm"
+          variant="danger"
+          phx-click="delete"
+          phx-value-id={topic.id}
+          data-confirm="Are you sure?"
+        >
+          Delete
+        </.button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<.modal
+  :if={@live_action in [:new, :edit]}
+  id="topic-modal"
+  show
+  on_cancel={JS.patch(~p"/topics")}
+>
+  <.live_component
+    module={DiscussWeb.TopicLive.FormComponent}
+    id={@topic.id || :new}
+    title={@page_title}
+    action={@live_action}
+    topic={@topic}
+    current_user={@current_user}
+    patch={~p"/topics"}
+  />
+</.modal>
