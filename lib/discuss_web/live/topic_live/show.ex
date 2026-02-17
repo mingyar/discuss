@@ -8,6 +8,10 @@ defmodule DiscussWeb.TopicLive.Show do
   def mount(%{"id" => id}, _session, socket) do
     topic = Discussions.get_topic!(id)
 
+    if connected?(socket) do
+      Discussions.subscribe_to_topic(id)
+    end
+
     guest_user =
       Discuss.Accounts.get_user_by_email("guest@discuss.app")
 
@@ -23,17 +27,13 @@ defmodule DiscussWeb.TopicLive.Show do
   @impl true
   def handle_event("save_comment", %{"comment" => comment_params}, socket) do
     case Discussions.create_comment(
-           # ← Agora usa o guest user real
            socket.assigns.current_user,
            socket.assigns.topic,
            comment_params
          ) do
       {:ok, comment} ->
-        comment = Discuss.Repo.preload(comment, :user)
-
         {:noreply,
          socket
-         |> stream_insert(:comments, comment)
          |> assign_comment_form()
          |> put_flash(:info, "Comment created successfully")}
 
@@ -48,10 +48,20 @@ defmodule DiscussWeb.TopicLive.Show do
 
     if socket.assigns.current_user && socket.assigns.current_user.id == comment.user_id do
       {:ok, _} = Discussions.delete_comment(comment)
-      {:noreply, stream_delete(socket, :comments, comment)}
+      {:noreply, socket}
     else
       {:noreply, put_flash(socket, :error, "You can only delete your own comments")}
     end
+  end
+
+  @impl true
+  def handle_info({:comment_created, comment}, socket) do
+    {:noreply, stream_insert(socket, :comments, comment)}
+  end
+
+  @impl true
+  def handle_info({:comment_deleted, comment}, socket) do
+    {:noreply, stream_delete(socket, :comments, comment)}
   end
 
   defp assign_comment_form(socket) do

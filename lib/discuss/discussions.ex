@@ -82,7 +82,7 @@ defmodule Discuss.Discussions do
   end
 
   @doc """
-  Creates a new comment associated with a user and a topic.
+  Creates a new comment and broadcasts to connected users.
   """
   def create_comment(user, topic, attrs) do
     topic
@@ -90,13 +90,22 @@ defmodule Discuss.Discussions do
     |> Comment.changeset(attrs)
     |> Ecto.Changeset.put_assoc(:user, user)
     |> Repo.insert()
+    |> broadcast_comment(:comment_created)
   end
 
   @doc """
-  Deletes a comment.
+  Deletes a comment and broadcasts the deletion.
   """
   def delete_comment(%Comment{} = comment) do
     Repo.delete(comment)
+    |> broadcast_comment(:comment_deleted)
+  end
+
+  @doc """
+  Subscribes the current process to receive updates from a topic.
+  """
+  def subscribe_to_topic(topic_id) do
+    Phoenix.PubSub.subscribe(Discuss.PubSub, "topic:#{topic_id}")
   end
 
   @doc """
@@ -109,4 +118,19 @@ defmodule Discuss.Discussions do
   def get_comment!(id) do
     Repo.get!(Comment, id)
   end
+
+  defp broadcast_comment({:ok, comment} = result, event) do
+    # Preload associations before broadcasting
+    comment = Repo.preload(comment, [:user, :topic])
+
+    Phoenix.PubSub.broadcast(
+      Discuss.PubSub,
+      "topic:#{comment.topic_id}",
+      {event, comment}
+    )
+
+    result
+  end
+
+  defp broadcast_comment(error, _event), do: error
 end
