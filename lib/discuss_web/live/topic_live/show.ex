@@ -31,7 +31,7 @@ defmodule DiscussWeb.TopicLive.Show do
            socket.assigns.topic,
            comment_params
          ) do
-      {:ok, comment} ->
+      {:ok, _comment} ->
         {:noreply,
          socket
          |> assign_comment_form()
