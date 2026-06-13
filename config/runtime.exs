@@ -35,30 +35,6 @@ if config_env() == :prod do
       For example: ecto://USER:PASS@HOST/DATABASE
       """
 
-  # On Fly.io's IPv6-only network, Erlang's DNS resolver cannot resolve
-  # IPv4-only hostnames like Neon databases. Use the system resolver (getent)
-  # to resolve the hostname to an IP address before configuring the repo.
-  if System.get_env("FLY_APP_NAME") do
-    uri = URI.parse(database_url)
-
-    case uri.host do
-      nil ->
-        :ok
-
-      host ->
-        if System.find_executable("getent") do
-          case System.cmd("getent", ["hosts", host]) do
-            {result, 0} ->
-              ip = result |> String.split() |> List.first()
-              database_url = String.replace(database_url, host, ip)
-
-            _ ->
-              :ok
-          end
-        end
-    end
-  end
-
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
   config :discuss, Discuss.Repo,

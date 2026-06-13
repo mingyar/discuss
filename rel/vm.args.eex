@@ -7,3 +7,6 @@
 
 ## Enable dirty schedulers
 +SDio 16
+
+## Use OS resolver (getaddrinfo) for DNS64 compatibility on Fly.io
+-kernel inetrc "/app/inetrc"
