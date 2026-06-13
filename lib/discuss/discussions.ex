@@ -41,29 +41,54 @@ defmodule Discuss.Discussions do
   end
 
   @doc """
-  Creates a new topic associated with a user.
+  Subscribes the current process to receive topic-level updates (creates, deletes, updates).
   """
+  def subscribe_to_topics do
+    Phoenix.PubSub.subscribe(Discuss.PubSub, "topics")
+  end
+
+  @doc """
+  Creates a new topic associated with a user and broadcasts to connected users.
+  Returns `{:ok, topic}` on success, `{:error, changeset}` on validation failure,
+  or `{:error, :unauthorized}` if no user is provided.
+  """
+  def create_topic(nil, _attrs), do: {:error, :unauthorized}
+
   def create_topic(user, attrs) do
     user
     |> Ecto.build_assoc(:topics)
     |> Topic.changeset(attrs)
     |> Repo.insert()
+    |> broadcast_topic(:topic_created)
   end
 
   @doc """
-  Updates an existing topic.
+  Updates an existing topic and broadcasts to connected users.
   """
   def update_topic(%Topic{} = topic, attrs) do
     topic
     |> Topic.changeset(attrs)
     |> Repo.update()
+    |> broadcast_topic(:topic_updated)
   end
 
   @doc """
-  Deletes a topic. Comments are cascade-deleted at the database level.
+  Updates a topic, verifying the user is the owner.
+  Returns `{:ok, topic}` on success, `{:error, :unauthorized}` if the user does not own the topic,
+  or `{:error, changeset}` on validation failure.
+  """
+  def update_topic_by_user(%User{id: user_id}, %Topic{user_id: user_id} = topic, attrs) do
+    update_topic(topic, attrs)
+  end
+
+  def update_topic_by_user(_user, _topic, _attrs), do: {:error, :unauthorized}
+
+  @doc """
+  Deletes a topic and broadcasts the deletion. Comments are cascade-deleted at the database level.
   """
   def delete_topic(%Topic{} = topic) do
     Repo.delete(topic)
+    |> broadcast_topic(:topic_deleted)
   end
 
   @doc """
@@ -142,9 +167,26 @@ defmodule Discuss.Discussions do
     Comment.changeset(comment, attrs)
   end
 
+  @doc """
+  Returns a comment by ID, or nil if not found.
+  """
+  def get_comment(id) do
+    Repo.get(Comment, id)
+  end
+
   def get_comment!(id) do
     Repo.get!(Comment, id)
   end
+
+  defp broadcast_topic({:ok, topic} = result, event) do
+    topic = Repo.preload(topic, :user)
+
+    Phoenix.PubSub.broadcast(Discuss.PubSub, "topics", {event, topic})
+
+    result
+  end
+
+  defp broadcast_topic(error, _event), do: error
 
   defp broadcast_comment({:ok, comment} = result, event) do
     # Preload associations before broadcasting

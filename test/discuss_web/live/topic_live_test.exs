@@ -1,5 +1,5 @@
 defmodule DiscussWeb.TopicLiveTest do
-  use DiscussWeb.ConnCase
+  use DiscussWeb.ConnCase, async: true
   import Phoenix.LiveViewTest
   import Discuss.AccountsFixtures
   import Discuss.DiscussionsFixtures
@@ -54,15 +54,68 @@ defmodule DiscussWeb.TopicLiveTest do
 
     test "real-time insert when a new topic is created", %{conn: conn} do
       user = user_fixture()
+      # seed an existing topic
+      topic_fixture(user)
       {:ok, index_live, _html} = live(conn, ~p"/topics")
 
-      # Simulate another user creating a topic by sending the same message FormComponent would send
+      # Simulate another user creating a topic via PubSub broadcast
       {:ok, topic} = Discussions.create_topic(user, %{title: "Real-time topic"})
       topic = Repo.preload(topic, :user)
 
-      send(index_live.pid, {DiscussWeb.TopicLive.FormComponent, {:saved, topic}})
+      send(index_live.pid, {:topic_created, topic})
 
       assert render(index_live) =~ "Real-time topic"
+    end
+
+    test "real-time delete when a topic is deleted", %{conn: conn} do
+      user = user_fixture()
+      topic = topic_fixture(user)
+      {:ok, index_live, _html} = live(conn, ~p"/topics")
+
+      # Verify the topic is visible first
+      assert render(index_live) =~ topic.title
+
+      # Simulate another user deleting the topic via PubSub broadcast
+      {:ok, deleted} = Discussions.delete_topic(topic)
+      deleted = Repo.preload(deleted, :user)
+
+      send(index_live.pid, {:topic_deleted, deleted})
+
+      refute render(index_live) =~ topic.title
+    end
+
+    test "real-time update when a topic title changes", %{conn: conn} do
+      user = user_fixture()
+      topic = topic_fixture(user)
+      {:ok, index_live, _html} = live(conn, ~p"/topics")
+
+      # Simulate topic being updated by another user via PubSub broadcast
+      {:ok, updated} = Discussions.update_topic(topic, %{title: "Updated from broadcast"})
+      updated = Repo.preload(updated, :user)
+
+      send(index_live.pid, {:topic_updated, updated})
+
+      assert render(index_live) =~ "Updated from broadcast"
+    end
+
+    test "real-time update when topic is not in stream yet", %{conn: conn} do
+      # When a topic is created while LiveView is already mounted,
+      # it arrives via {:topic_created, topic} broadcast
+      user = user_fixture()
+      {:ok, index_live, _html} = live(conn, ~p"/topics")
+
+      topic =
+        %Discuss.Discussions.Topic{
+          title: "Brand new topic",
+          user_id: user.id
+        }
+        |> Repo.insert!()
+
+      topic = Repo.preload(topic, :user)
+
+      send(index_live.pid, {:topic_created, topic})
+
+      assert render(index_live) =~ "Brand new topic"
     end
 
     test "shows inline composer for authenticated user", %{conn: conn} do

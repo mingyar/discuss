@@ -3,7 +3,6 @@ defmodule DiscussWeb.TopicLive.Index do
 
   alias Discuss.Discussions
   alias Discuss.Discussions.Topic
-  alias Discuss.Repo
 
   @impl true
   def mount(_params, _session, socket) do
@@ -11,10 +10,11 @@ defmodule DiscussWeb.TopicLive.Index do
     # so they need the data. This is the SEO exception to the async rule.
     topics = Discussions.list_topics()
 
+    if connected?(socket), do: Discussions.subscribe_to_topics()
+
     {:ok,
      socket
      |> assign(:loading, false)
-     |> assign(:topics_count, length(topics))
      |> stream(:topics, topics)
      |> assign_create_form()}
   end
@@ -25,9 +25,24 @@ defmodule DiscussWeb.TopicLive.Index do
   end
 
   defp apply_action(socket, :edit, %{"id" => id}) do
-    socket
-    |> assign(:page_title, "Edit Topic")
-    |> assign(:topic, Discussions.get_topic!(id))
+    case Discussions.get_topic(id) do
+      nil ->
+        socket
+        |> put_flash(:error, "Topic not found")
+        |> push_navigate(to: ~p"/topics")
+
+      topic ->
+        if socket.assigns.current_user &&
+             socket.assigns.current_user.id == topic.user_id do
+          socket
+          |> assign(:page_title, "Edit Topic")
+          |> assign(:topic, topic)
+        else
+          socket
+          |> put_flash(:error, "You can only edit your own topics")
+          |> push_navigate(to: ~p"/topics")
+        end
+    end
   end
 
   defp apply_action(socket, :index, _params) do
@@ -45,25 +60,35 @@ defmodule DiscussWeb.TopicLive.Index do
   end
 
   @impl true
-  def handle_info({DiscussWeb.TopicLive.FormComponent, {:saved, topic}}, socket) do
-    topic = Repo.preload(topic, :user)
+  def handle_info({:topic_created, topic}, socket) do
+    {:noreply, stream_insert(socket, :topics, topic, at: 0)}
+  end
 
-    {:noreply,
-     socket
-     |> update(:topics_count, &(&1 + 1))
-     |> stream_insert(:topics, topic, at: 0)}
+  @impl true
+  def handle_info({:topic_deleted, topic}, socket) do
+    {:noreply, stream_delete(socket, :topics, topic)}
+  end
+
+  @impl true
+  def handle_info({:topic_updated, topic}, socket) do
+    {:noreply, stream_insert(socket, :topics, topic)}
+  end
+
+  @impl true
+  def handle_info({DiscussWeb.TopicLive.FormComponent, {:saved, topic}}, socket) do
+    # The FormComponent fires notify_parent on edit.
+    # The topic was already broadcast via update_topic/2 so the stream is already updated,
+    # but this ensures the parent side-effects (flash navigation) still occur.
+    # The duplicate stream_insert is a no-op since the DOM ID already exists.
+    {:noreply, stream_insert(socket, :topics, topic)}
   end
 
   @impl true
   def handle_event("create_topic", %{"topic" => topic_params}, socket) do
     case Discussions.create_topic(socket.assigns.current_user, topic_params) do
-      {:ok, topic} ->
-        topic = Repo.preload(topic, :user)
-
+      {:ok, _topic} ->
         {:noreply,
          socket
-         |> update(:topics_count, &(&1 + 1))
-         |> stream_insert(:topics, topic, at: 0)
          |> assign_create_form()
          |> put_flash(:info, "Topic created!")}
 
@@ -71,22 +96,26 @@ defmodule DiscussWeb.TopicLive.Index do
         {:noreply,
          socket
          |> assign(:create_form, to_form(changeset, action: :validate))}
+
+      {:error, :unauthorized} ->
+        {:noreply, put_flash(socket, :error, "You must be signed in to create a topic")}
     end
   end
 
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
-    topic = Discussions.get_topic!(id)
+    case Discussions.get_topic(id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, "Topic not found")}
 
-    case Discussions.delete_topic_by_user(socket.assigns.current_user, topic) do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> update(:topics_count, &(&1 - 1))
-         |> stream_delete(:topics, topic)}
+      topic ->
+        case Discussions.delete_topic_by_user(socket.assigns.current_user, topic) do
+          {:ok, _} ->
+            {:noreply, put_flash(socket, :info, "Topic deleted")}
 
-      {:error, :unauthorized} ->
-        {:noreply, put_flash(socket, :error, "You can only delete your own topics")}
+          {:error, :unauthorized} ->
+            {:noreply, put_flash(socket, :error, "You can only delete your own topics")}
+        end
     end
   end
 

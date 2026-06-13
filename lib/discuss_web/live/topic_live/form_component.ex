@@ -49,13 +49,23 @@ defmodule DiscussWeb.TopicLive.FormComponent do
   end
 
   defp save_topic(socket, :edit, topic_params) do
-    case Discussions.update_topic(socket.assigns.topic, topic_params) do
+    case Discussions.update_topic_by_user(
+           socket.assigns.current_user,
+           socket.assigns.topic,
+           topic_params
+         ) do
       {:ok, topic} ->
         notify_parent({:saved, topic})
 
         {:noreply,
          socket
          |> put_flash(:info, "Topic updated successfully")
+         |> push_patch(to: socket.assigns.patch)}
+
+      {:error, :unauthorized} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "You can only edit your own topics")
          |> push_patch(to: socket.assigns.patch)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -71,6 +81,12 @@ defmodule DiscussWeb.TopicLive.FormComponent do
         {:noreply,
          socket
          |> put_flash(:info, "Topic created successfully")
+         |> push_patch(to: socket.assigns.patch)}
+
+      {:error, :unauthorized} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "You must be signed in to create a topic")
          |> push_patch(to: socket.assigns.patch)}
 
       {:error, %Ecto.Changeset{} = changeset} ->

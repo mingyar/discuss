@@ -50,14 +50,18 @@ defmodule DiscussWeb.TopicLive.Show do
 
   @impl true
   def handle_event("delete_comment", %{"id" => id}, socket) do
-    comment = Discussions.get_comment!(id)
+    case Discussions.get_comment(id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, "Comment not found")}
 
-    case Discussions.delete_comment_by_user(socket.assigns.current_user, comment) do
-      {:ok, _} ->
-        {:noreply, put_flash(socket, :info, "Comment deleted")}
+      comment ->
+        case Discussions.delete_comment_by_user(socket.assigns.current_user, comment) do
+          {:ok, _} ->
+            {:noreply, put_flash(socket, :info, "Comment deleted")}
 
-      {:error, :unauthorized} ->
-        {:noreply, put_flash(socket, :error, "You can only delete your own comments")}
+          {:error, :unauthorized} ->
+            {:noreply, put_flash(socket, :error, "You can only delete your own comments")}
+        end
     end
   end
 

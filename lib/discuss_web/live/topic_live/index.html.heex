@@ -23,11 +23,11 @@
       />
       <input
         type="text"
-        name="topic[title]"
-        value={@create_form[:title].value}
+        name={@create_form[:title].name}
+        value={Phoenix.HTML.Form.normalize_value("text", @create_form[:title].value)}
         placeholder="What do you want to discuss?"
         autocomplete="off"
-        class="input w-full bg-base-200 border-0 focus:ring-0 placeholder:text-base-content/40"
+        class="w-full bg-base-200 border-0 focus:ring-0 rounded-xl px-4 py-2.5 text-sm placeholder:text-base-content/40 outline-none"
       />
       <.button class="shrink-0">Post</.button>
     </div>
@@ -50,15 +50,13 @@
   </div>
 </div>
 
-<!-- Empty State -->
-<div :if={@topics_count == 0} class="text-center py-12">
-  <.icon name="hero-chat-bubble-left-right" class="mx-auto h-12 w-12 text-base-content/40" />
-  <h3 class="mt-4 text-base font-medium text-base-content">No topics yet</h3>
-  <p class="mt-1 text-sm text-base-content/50">Be the first to start a discussion!</p>
-</div>
-
-<!-- Topics List -->
-<div :if={@topics_count > 0} class="mt-6 space-y-3" id="topics" phx-update="stream">
+<div class="mt-6 space-y-3" id="topics" phx-update="stream">
+  <!-- Empty State (only shown when this is the only child) -->
+  <div id="topics-empty" class="hidden only:flex only:flex-col only:items-center only:py-12">
+    <.icon name="hero-chat-bubble-left-right" class="mx-auto h-12 w-12 text-base-content/40" />
+    <h3 class="mt-4 text-base font-medium text-base-content">No topics yet</h3>
+    <p class="mt-1 text-sm text-base-content/50">Be the first to start a discussion!</p>
+  </div>
   <div
     :for={{id, topic} <- @streams.topics}
     id={id}

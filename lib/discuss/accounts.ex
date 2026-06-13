@@ -30,8 +30,8 @@ defmodule Discuss.Accounts do
 
   Used in the OAuth flow.
   """
-  def find_or_create_user(attrs) do
-    case Repo.get_by(User, provider: attrs.provider, uid: attrs.uid) do
+  def find_or_create_user(%{provider: provider, uid: uid} = attrs) do
+    case Repo.get_by(User, provider: provider, uid: uid) do
       nil -> create_user(attrs)
       user -> {:ok, user}
     end
