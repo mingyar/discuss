@@ -81,6 +81,12 @@ if config_env() == :prod do
   # Enable SSL for DB connection on Fly.io
   if System.get_env("FLY_APP_NAME") do
     config :discuss, Discuss.Repo, ssl: true
+
+    # Configure Erlang DNS resolver to use Fly.io's DNS64 server (fd00::1).
+    # Without this, Erlang cannot resolve IPv4-only hostnames (like Neon DB)
+    # from Fly.io's IPv6-only network.
+    {:ok, dns64_ns} = :inet.parse_ipv6_address('fd00::1')
+    :inet_db.set_ns([dns64_ns])
   end
 
   # To get SSL working, you will need to add the `https` key
