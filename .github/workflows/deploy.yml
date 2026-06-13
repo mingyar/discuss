@@ -113,6 +113,9 @@ jobs:
       - name: Build assets
         run: mix assets.deploy
 
+      - name: Clean old release to avoid stale config files
+        run: rm -rf _build/prod/rel/discuss/
+
       - name: Build release
         run: mix release
 
