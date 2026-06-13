@@ -8,12 +8,14 @@ ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
 # Build stage
 FROM ${BUILDER_IMAGE} as builder
 
-RUN apt-get update -y && apt-get install -y build-essential git \
+RUN apt-get update -y && apt-get install -y build-essential git ca-certificates openssl \
+    && update-ca-certificates --fresh \
     && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 WORKDIR /app
 
 ENV MIX_ENV=prod
+ENV HEX_UNSAFE_HTTPS=true
 
 # Dependencies
 COPY mix.exs mix.lock ./
