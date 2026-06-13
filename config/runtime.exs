@@ -46,13 +46,15 @@ if config_env() == :prod do
         :ok
 
       host ->
-        case System.cmd("getent", ["hosts", host]) do
-          {result, 0} ->
-            ip = result |> String.split() |> List.first()
-            database_url = String.replace(database_url, host, ip)
+        if System.find_executable("getent") do
+          case System.cmd("getent", ["hosts", host]) do
+            {result, 0} ->
+              ip = result |> String.split() |> List.first()
+              database_url = String.replace(database_url, host, ip)
 
-          _ ->
-            :ok
+            _ ->
+              :ok
+          end
         end
     end
   end
