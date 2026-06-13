@@ -1,6 +1,6 @@
 ARG ELIXIR_VERSION=1.18.2
 ARG OTP_VERSION=27.2
-ARG DEBIAN_VERSION=bookworm-20260610
+ARG DEBIAN_VERSION=bookworm-20260610-slim
 
 ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}"
 ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
@@ -15,7 +15,6 @@ RUN apt-get update -y && apt-get install -y build-essential git ca-certificates 
 WORKDIR /app
 
 ENV MIX_ENV=prod
-ENV HEX_UNSAFE_HTTPS=true
 
 # Dependencies
 COPY mix.exs mix.lock ./
