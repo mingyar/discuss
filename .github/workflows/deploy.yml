@@ -107,6 +107,9 @@ jobs:
           mix local.hex --force
           mix deps.get --only prod
 
+      - name: Compile
+        run: mix compile
+
       - name: Build assets
         run: mix assets.deploy
 
