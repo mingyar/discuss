@@ -78,14 +78,32 @@ if config_env() == :prod do
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
+  # Build the ssl config for the Repo.
+  # Postgrex 0.22.0 deprecated `ssl_opts:` in favor of passing opts directly
+  # inside the `ssl:` keyword list. The keyword list form merges user opts on
+  # top of Postgrex's secure defaults (verify_peer + customize_hostname_check).
+  ssl_config =
+    cond do
+      System.get_env("FLY_APP_NAME") && ssl_opts_extra != [] ->
+        # On Fly.io with getent IP substitution: need to provide cacerts
+        # (for peer verification) plus custom server_name_indication for
+        # proper SNI and hostname check against the Neon wildcard cert.
+        [cacerts: :public_key.cacerts_get()] ++ ssl_opts_extra
+
+      System.get_env("FLY_APP_NAME") ->
+        true
+
+      true ->
+        false
+    end
+
   config :discuss, Discuss.Repo,
-    ssl: System.get_env("FLY_APP_NAME") != nil,
+    ssl: ssl_config,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     # For machines with several cores, consider starting multiple pools of `pool_size`
     # pool_count: 4,
-    socket_options: maybe_ipv6,
-    ssl_opts: ssl_opts_extra
+    socket_options: maybe_ipv6
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
