@@ -4,6 +4,7 @@ defmodule Discuss.Discussions do
   """
 
   import Ecto.Query
+  alias Discuss.Accounts.User
   alias Discuss.Repo
   alias Discuss.Discussions.{Topic, Comment}
 
@@ -22,7 +23,16 @@ defmodule Discuss.Discussions do
   end
 
   @doc """
-  Returns a topic by ID with its user and comments preloaded.
+  Returns a topic by ID with its user and comments preloaded, or nil if not found.
+  """
+  def get_topic(id) do
+    Topic
+    |> preload([:user, comments: [:user]])
+    |> Repo.get(id)
+  end
+
+  @doc """
+  Returns a topic by ID or raises if not found.
   """
   def get_topic!(id) do
     Topic
@@ -50,14 +60,21 @@ defmodule Discuss.Discussions do
   end
 
   @doc """
-  Deletes a topic.
+  Deletes a topic. Comments are cascade-deleted at the database level.
   """
   def delete_topic(%Topic{} = topic) do
-    from(c in Comment, where: c.topic_id == ^topic.id)
-    |> Repo.delete_all()
-
     Repo.delete(topic)
   end
+
+  @doc """
+  Deletes a topic, verifying the user is the owner.
+  Returns `{:ok, topic}` on success, `{:error, :unauthorized}` if the user does not own the topic.
+  """
+  def delete_topic_by_user(%User{id: user_id}, %Topic{user_id: user_id} = topic) do
+    delete_topic(topic)
+  end
+
+  def delete_topic_by_user(_user, _topic), do: {:error, :unauthorized}
 
   @doc """
   Returns a changeset for tracking topic changes.
@@ -100,6 +117,16 @@ defmodule Discuss.Discussions do
     Repo.delete(comment)
     |> broadcast_comment(:comment_deleted)
   end
+
+  @doc """
+  Deletes a comment, verifying the user is the owner.
+  Returns `{:ok, comment}` on success, `{:error, :unauthorized}` if the user does not own the comment.
+  """
+  def delete_comment_by_user(%User{id: user_id}, %Comment{user_id: user_id} = comment) do
+    delete_comment(comment)
+  end
+
+  def delete_comment_by_user(_user, _comment), do: {:error, :unauthorized}
 
   @doc """
   Subscribes the current process to receive updates from a topic.

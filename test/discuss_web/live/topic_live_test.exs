@@ -4,6 +4,100 @@ defmodule DiscussWeb.TopicLiveTest do
   import Discuss.AccountsFixtures
   import Discuss.DiscussionsFixtures
   alias Discuss.Discussions
+  alias Discuss.Repo
+
+  describe "Index" do
+    test "renders topics list", %{conn: conn} do
+      topic = topic_fixture()
+
+      {:ok, index_live, html} = live(conn, ~p"/topics")
+
+      assert html =~ topic.title
+      assert has_element?(index_live, "#topics")
+    end
+
+    test "shows empty state when no topics exist", %{conn: conn} do
+      {:ok, _index_live, html} = live(conn, ~p"/topics")
+
+      assert html =~ "No topics yet"
+    end
+
+    test "topic owner can delete their own topic", %{conn: conn} do
+      user = user_fixture()
+      topic_fixture(user)
+
+      conn = init_test_session(conn, user_id: user.id)
+
+      {:ok, index_live, _html} = live(conn, ~p"/topics")
+
+      assert has_element?(index_live, "button[aria-label='Delete topic']")
+
+      index_live
+      |> element("button[aria-label='Delete topic']")
+      |> render_click()
+
+      refute has_element?(index_live, ~s/[aria-label="Delete topic"]/)
+    end
+
+    test "non-owner cannot delete another user's topic", %{conn: conn} do
+      owner = user_fixture()
+      _topic = topic_fixture(owner)
+
+      other_user = user_fixture()
+
+      conn = init_test_session(conn, user_id: other_user.id)
+
+      {:ok, index_live, _html} = live(conn, ~p"/topics")
+
+      refute has_element?(index_live, "button[aria-label='Delete topic']")
+    end
+
+    test "real-time insert when a new topic is created", %{conn: conn} do
+      user = user_fixture()
+      {:ok, index_live, _html} = live(conn, ~p"/topics")
+
+      # Simulate another user creating a topic by sending the same message FormComponent would send
+      {:ok, topic} = Discussions.create_topic(user, %{title: "Real-time topic"})
+      topic = Repo.preload(topic, :user)
+
+      send(index_live.pid, {DiscussWeb.TopicLive.FormComponent, {:saved, topic}})
+
+      assert render(index_live) =~ "Real-time topic"
+    end
+
+    test "shows inline composer for authenticated user", %{conn: conn} do
+      user = user_fixture()
+      topic_fixture(user)
+
+      conn = init_test_session(conn, user_id: user.id)
+
+      {:ok, index_live, _html} = live(conn, ~p"/topics")
+
+      assert has_element?(index_live, "#create-topic-form")
+      assert render(index_live) =~ "What do you want to discuss?"
+    end
+
+    test "shows sign-in prompt in composer for unauthenticated user", %{conn: conn} do
+      {:ok, _index_live, html} = live(conn, ~p"/topics")
+
+      assert html =~ "Sign in"
+      assert html =~ "to start a discussion"
+    end
+
+    test "creates a topic via inline composer", %{conn: conn} do
+      user = user_fixture()
+
+      conn = init_test_session(conn, user_id: user.id)
+
+      {:ok, index_live, _html} = live(conn, ~p"/topics")
+
+      index_live
+      |> form("#create-topic-form", topic: %{title: "Posted via composer"})
+      |> render_submit()
+
+      assert render(index_live) =~ "Posted via composer"
+    end
+  end
 
   describe "Show - Real-time updates" do
     test "receives real-time comment updates", %{conn: conn} do

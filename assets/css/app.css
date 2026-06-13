@@ -102,4 +102,24 @@
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
+/* Focus states for accessibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+}
+
+/* Fade out scale animation for delete transitions */
+.fade-out-scale {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+/* Fade in scale animation for toast */
+.fade-in-scale {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
 /* This file is for your main application CSS */

@@ -447,3 +447,8 @@ And **never** do this:
 <!-- phoenix:liveview-end -->
 
 <!-- usage-rules-end -->
+
+# Elixir Agent Rules
+- Always use the `elixir-ls` language server for background syntax checking.
+- Follow functional programming standards and write unit tests using ExUnit.
+- Leverage project skills located in `.opencode/skills/`.

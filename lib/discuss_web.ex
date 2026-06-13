@@ -50,7 +50,10 @@ defmodule DiscussWeb do
 
   def live_view do
     quote do
-      use Phoenix.LiveView
+      use Phoenix.LiveView,
+        layout: {DiscussWeb.Layouts, :app}
+
+      on_mount DiscussWeb.UserAuth
 
       unquote(html_helpers())
     end

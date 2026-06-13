@@ -6,22 +6,28 @@ defmodule DiscussWeb.TopicLive.Show do
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
-    topic = Discussions.get_topic!(id)
+    case Discussions.get_topic(id) do
+      nil ->
+        {:ok,
+         socket
+         |> put_flash(:error, "Topic not found")
+         |> push_navigate(to: ~p"/topics")}
 
-    if connected?(socket) do
-      Discussions.subscribe_to_topic(id)
+      topic ->
+        if connected?(socket) do
+          Discussions.subscribe_to_topic(id)
+        end
+
+        comments_count = length(topic.comments)
+
+        {:ok,
+         socket
+         |> assign(:topic, topic)
+         |> assign(:page_title, topic.title)
+         |> assign(:comments_count, comments_count)
+         |> stream(:comments, topic.comments)
+         |> assign_comment_form()}
     end
-
-    guest_user =
-      Discuss.Accounts.get_user_by_email("guest@discuss.app")
-
-    {:ok,
-     socket
-     |> assign(:current_user, guest_user)
-     |> assign(:topic, topic)
-     |> assign(:page_title, topic.title)
-     |> stream(:comments, topic.comments)
-     |> assign_comment_form()}
   end
 
   @impl true
@@ -46,22 +52,29 @@ defmodule DiscussWeb.TopicLive.Show do
   def handle_event("delete_comment", %{"id" => id}, socket) do
     comment = Discussions.get_comment!(id)
 
-    if socket.assigns.current_user && socket.assigns.current_user.id == comment.user_id do
-      {:ok, _} = Discussions.delete_comment(comment)
-      {:noreply, socket}
-    else
-      {:noreply, put_flash(socket, :error, "You can only delete your own comments")}
+    case Discussions.delete_comment_by_user(socket.assigns.current_user, comment) do
+      {:ok, _} ->
+        {:noreply, put_flash(socket, :info, "Comment deleted")}
+
+      {:error, :unauthorized} ->
+        {:noreply, put_flash(socket, :error, "You can only delete your own comments")}
     end
   end
 
   @impl true
   def handle_info({:comment_created, comment}, socket) do
-    {:noreply, stream_insert(socket, :comments, comment)}
+    {:noreply,
+     socket
+     |> update(:comments_count, &(&1 + 1))
+     |> stream_insert(:comments, comment)}
   end
 
   @impl true
   def handle_info({:comment_deleted, comment}, socket) do
-    {:noreply, stream_delete(socket, :comments, comment)}
+    {:noreply,
+     socket
+     |> update(:comments_count, &(&1 - 1))
+     |> stream_delete(:comments, comment)}
   end
 
   defp assign_comment_form(socket) do

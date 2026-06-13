@@ -5,7 +5,6 @@ defmodule Discuss.DiscussionsTest do
   import Discuss.DiscussionsFixtures
 
   alias Discuss.Discussions
-  alias Discuss.Discussions.Comment
 
   describe "comments with PubSub" do
     test "create_comment/3 broadcasts comment_created event" do

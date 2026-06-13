@@ -8,6 +8,11 @@ defmodule DiscussWeb.Router do
     plug :put_root_layout, html: {DiscussWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug DiscussWeb.Plugs.SetUser
+  end
+
+  pipeline :require_auth do
+    plug DiscussWeb.Plugs.RequireAuth
   end
 
   pipeline :api do
@@ -16,12 +21,21 @@ defmodule DiscussWeb.Router do
 
   scope "/", DiscussWeb do
     pipe_through :browser
+
     live "/", TopicLive.Index, :index
     live "/topics", TopicLive.Index, :index
     live "/topics/new", TopicLive.Index, :new
     live "/topics/:id/edit", TopicLive.Index, :edit
-    live "/topics/:id", TopicLive.Show, :show
     live "/topics/:id/show/edit", TopicLive.Show, :edit
+    live "/topics/:id", TopicLive.Show, :show
+  end
+
+  scope "/auth", DiscussWeb do
+    pipe_through :browser
+
+    get "/:provider", AuthController, :request
+    get "/:provider/callback", AuthController, :callback
+    delete "/signout", AuthController, :signout
   end
 
   # Other scopes may use custom stacks.
@@ -31,11 +45,6 @@ defmodule DiscussWeb.Router do
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:discuss, :dev_routes) do
-    # If you want to use the LiveDashboard in production, you should put
-    # it behind authentication and allow only admins to access it.
-    # If your application does not have an admins-only section yet,
-    # you can use Plug.BasicAuth to set up some basic authentication
-    # as long as you are also using SSL (which you should anyway).
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do

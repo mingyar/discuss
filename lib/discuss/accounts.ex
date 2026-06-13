@@ -7,6 +7,11 @@ defmodule Discuss.Accounts do
   alias Discuss.Accounts.User
 
   @doc """
+  Returns a user by ID, or nil if not found.
+  """
+  def get_user(id), do: Repo.get(User, id)
+
+  @doc """
   Returns a user by ID.
 
   Raises an exception if the user is not found.

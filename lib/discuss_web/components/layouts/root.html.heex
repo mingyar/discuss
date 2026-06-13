@@ -7,27 +7,53 @@
     <.live_title default="Discuss" suffix=" · Phoenix Framework">
       {assigns[:page_title]}
     </.live_title>
-    <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
-    <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
-    </script>
     <script>
       (() => {
-        const setTheme = (theme) => {
-          if (theme === "system") {
-            localStorage.removeItem("phx:theme");
-            document.documentElement.removeAttribute("data-theme");
+        const THEME_MODE_KEY = "phx:theme";
+
+        const getSystemTheme = () =>
+          window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+
+        const setTheme = (mode) => {
+          localStorage.setItem(THEME_MODE_KEY, mode);
+          document.documentElement.setAttribute("data-theme-mode", mode);
+
+          if (mode === "system") {
+            document.documentElement.setAttribute("data-theme", getSystemTheme());
           } else {
-            localStorage.setItem("phx:theme", theme);
-            document.documentElement.setAttribute("data-theme", theme);
+            document.documentElement.setAttribute("data-theme", mode);
           }
         };
-        if (!document.documentElement.hasAttribute("data-theme")) {
-          setTheme(localStorage.getItem("phx:theme") || "system");
-        }
-        window.addEventListener("storage", (e) => e.key === "phx:theme" && setTheme(e.newValue || "system"));
-        
-        window.addEventListener("phx:set-theme", (e) => setTheme(e.target.dataset.phxTheme));
+
+        // Listen for OS-level color scheme changes (when in system mode)
+        window
+          .matchMedia("(prefers-color-scheme: dark)")
+          .addEventListener("change", () => {
+            const mode = localStorage.getItem(THEME_MODE_KEY) || "system";
+            if (mode === "system") {
+              document.documentElement.setAttribute("data-theme", getSystemTheme());
+            }
+          });
+
+        // Initialize
+        const stored = localStorage.getItem(THEME_MODE_KEY);
+        setTheme(stored || "system");
+
+        // Sync across tabs
+        window.addEventListener("storage", (e) => {
+          if (e.key === THEME_MODE_KEY) {
+            setTheme(e.newValue || "system");
+          }
+        });
+
+        // Handle theme toggle clicks from LiveView
+        window.addEventListener("phx:set-theme", (e) =>
+          setTheme(e.target.dataset.phxTheme)
+        );
       })();
+    </script>
+    <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>
   </head>
   <body>
