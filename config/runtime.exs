@@ -36,20 +36,18 @@ if config_env() == :prod do
       """
 
   # On Fly.io, resolve the database hostname via the OS resolver (getent)
-  # to bypass Erlang's DNS. Erlang's built-in DNS resolver fails on
-  # Fly.io's IPv6-only network because external Neon hostnames only have
-  # IPv4 A records. The getent command uses glibc's getaddrinfo(), which
-  # queries Fly.io's DNS64 server (fd00::1) and receives a synthesized
-  # IPv6 address via 64:ff9b::/96 NAT64 prefix. We substitute the resolved
-  # IP into the DATABASE_URL so Erlang never needs to resolve the hostname.
+  # to bypass Erlang's DNS. The getent command calls glibc's getaddrinfo(),
+  # which queries the system DNS resolver. On Fly.io, the DNS resolver
+  # at fd00::1 supports DNS64 synthesis for the 64:ff9b::/96 NAT64 prefix.
+  # If DNS64 returns an IPv6 address we use it directly; if only IPv4 is
+  # returned we construct the NAT64 address manually using the Well-Known Prefix.
   database_url =
     if System.get_env("FLY_APP_NAME") do
       uri = URI.parse(database_url)
 
       if uri.host && System.find_executable("getent") do
-        # getent hosts first tries AF_INET6 (-> DNS64 synthesized v6 on Fly.io)
-        # then AF_INET (raw IPv4). On a DNS64 network the first IP is the
-        # synthesized 64:ff9b::/96 address.
+        # getent hosts returns all resolved addresses: IPv6 first (if DNS64 works),
+        # then IPv4 (raw record). If DNS64 fails, only IPv4 is returned.
         case System.cmd("getent", ["hosts", uri.host], stderr_to_stdout: true) do
           {result, 0} ->
             ips =
@@ -59,20 +57,30 @@ if config_env() == :prod do
               |> Enum.filter(&(&1 != []))
               |> Enum.map(&List.first/1)
 
-            # Prefer IPv6 (DNS64-synthesized), then fall back to IPv4
-            ip = Enum.find(ips, fn candidate -> String.contains?(candidate, ":") end)
-
+            # Prefer IPv6 (DNS64-synthesized), then use NAT64-mapped IPv4
             ip =
-              if ip do
-                ip
-              else
-                List.first(ips)
+              case Enum.find(ips, fn candidate -> String.contains?(candidate, ":") end) do
+                nil ->
+                  # No IPv6 from DNS64 — construct NAT64 address manually
+                  case List.first(ips) do
+                    nil ->
+                      nil
+
+                    ipv4 ->
+                      [a, b, c, d] =
+                        ipv4 |> String.split(".") |> Enum.map(&String.to_integer/1)
+
+                      a1 = Integer.to_string(a * 256 + b, 16)
+                      a2 = Integer.to_string(c * 256 + d, 16)
+                      "64:ff9b::#{a1}:#{a2}"
+                  end
+
+                ipv6 ->
+                  ipv6
               end
 
             if ip && ip != uri.host do
-              host_part =
-                if String.contains?(ip, ":"), do: "[#{ip}]", else: ip
-
+              host_part = "[#{ip}]"
               port = uri.port || 5432
               path = uri.path || "/"
               "#{uri.scheme}://#{uri.userinfo}@#{host_part}:#{port}#{path}"
