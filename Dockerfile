@@ -1,6 +1,4 @@
-ARG DEBIAN_VERSION=bookworm-20250113-slim
-
-FROM debian:${DEBIAN_VERSION}
+FROM ubuntu:24.04
 
 RUN apt-get update -y && \
     apt-get install -y libstdc++6 openssl libncurses6 locales ca-certificates curl \
