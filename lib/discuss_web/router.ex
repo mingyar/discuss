@@ -30,6 +30,11 @@ defmodule DiscussWeb.Router do
     live "/topics/:id", TopicLive.Show, :show
   end
 
+  scope "/health", DiscussWeb do
+    get "/liveness", HealthController, :liveness
+    get "/readiness", HealthController, :readiness
+  end
+
   scope "/auth", DiscussWeb do
     pipe_through :browser
 

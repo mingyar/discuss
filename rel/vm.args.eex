@@ -1,0 +1,9 @@
+## Performance tuning
++sbwt very_short
++swt very_low
+
+## Increase process limit
++P 1000000
+
+## Enable dirty schedulers
++SDio 16

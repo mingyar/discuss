@@ -20,6 +20,10 @@ if System.get_env("PHX_SERVER") do
   config :discuss, DiscussWeb.Endpoint, server: true
 end
 
+if System.get_env("FLY_APP_NAME") do
+  config :discuss, DiscussWeb.Endpoint, server: true
+end
+
 config :discuss, DiscussWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
@@ -57,6 +61,10 @@ if config_env() == :prod do
 
   config :discuss, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
+  if System.get_env("FLY_APP_NAME") do
+    config :discuss, :dns_cluster_query, "#{System.get_env("FLY_APP_NAME")}.internal"
+  end
+
   config :discuss, DiscussWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [
@@ -70,6 +78,11 @@ if config_env() == :prod do
 
   # ## SSL Support
   #
+  # Enable SSL for DB connection on Fly.io
+  if System.get_env("FLY_APP_NAME") do
+    config :discuss, Discuss.Repo, ssl: true
+  end
+
   # To get SSL working, you will need to add the `https` key
   # to your endpoint configuration:
   #
