@@ -10,6 +10,12 @@ maxTurns: 15
 omitClaudeMd: true
 skills:
   - liveview-patterns
+  - deploy
+  - elixir-idioms
+  - learn-from-fix
+  - phoenix-contexts
+  - security
+  - testing
 ---
 
 # LiveView Architecture Advisor
