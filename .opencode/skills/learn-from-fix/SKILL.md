@@ -1,5 +1,5 @@
 ---
-name: phx:learn-from-fix
+name: learn-from-fix
 description: Capture lessons after fixing a bug or receiving a correction — ecto, liveview, oban, iron law mistakes. Use when the user corrects your approach or teaches a pattern.
 effort: low
 argument-hint: <description of what was fixed>

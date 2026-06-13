@@ -35,10 +35,65 @@ if config_env() == :prod do
       For example: ecto://USER:PASS@HOST/DATABASE
       """
 
+  # On Fly.io, resolve the database hostname via the OS resolver (getent)
+  # to bypass Erlang's DNS. Erlang's built-in DNS resolver fails on
+  # Fly.io's IPv6-only network because external Neon hostnames only have
+  # IPv4 A records. The getent command uses glibc's getaddrinfo(), which
+  # queries Fly.io's DNS64 server (fd00::1) and receives a synthesized
+  # IPv6 address via 64:ff9b::/96 NAT64 prefix. We substitute the resolved
+  # IP into the DATABASE_URL so Erlang never needs to resolve the hostname.
+  database_url =
+    if System.get_env("FLY_APP_NAME") do
+      uri = URI.parse(database_url)
+
+      if uri.host && System.find_executable("getent") do
+        # getent hosts first tries AF_INET6 (-> DNS64 synthesized v6 on Fly.io)
+        # then AF_INET (raw IPv4). On a DNS64 network the first IP is the
+        # synthesized 64:ff9b::/96 address.
+        case System.cmd("getent", ["hosts", uri.host], stderr_to_stdout: true) do
+          {result, 0} ->
+            ips =
+              result
+              |> String.split("\n", trim: true)
+              |> Enum.map(&String.split(&1, " ", trim: true))
+              |> Enum.filter(&(&1 != []))
+              |> Enum.map(&List.first/1)
+
+            # Prefer IPv6 (DNS64-synthesized), then fall back to IPv4
+            ip = Enum.find(ips, fn candidate -> String.contains?(candidate, ":") end)
+
+            ip =
+              if ip do
+                ip
+              else
+                List.first(ips)
+              end
+
+            if ip && ip != uri.host do
+              host_part =
+                if String.contains?(ip, ":"), do: "[#{ip}]", else: ip
+
+              port = uri.port || 5432
+              path = uri.path || "/"
+              "#{uri.scheme}://#{uri.userinfo}@#{host_part}:#{port}#{path}"
+            else
+              database_url
+            end
+
+          _ ->
+            database_url
+        end
+      else
+        database_url
+      end
+    else
+      database_url
+    end
+
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
   config :discuss, Discuss.Repo,
-    # ssl: true,
+    ssl: System.get_env("FLY_APP_NAME") != nil,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     # For machines with several cores, consider starting multiple pools of `pool_size`
@@ -75,19 +130,6 @@ if config_env() == :prod do
       ip: {0, 0, 0, 0, 0, 0, 0, 0}
     ],
     secret_key_base: secret_key_base
-
-  # ## SSL Support
-  #
-  # Enable SSL for DB connection on Fly.io
-  if System.get_env("FLY_APP_NAME") do
-    config :discuss, Discuss.Repo, ssl: true
-
-    # Use OS native resolver (getaddrinfo) instead of Erlang's built-in DNS.
-    # On Fly.io's IPv6-only network, getaddrinfo handles DNS64 (IPv4→IPv6)
-    # synthesis via Fly.io's internal DNS resolver, while Erlang's own DNS
-    # resolver can't resolve IPv4-only hostnames.
-    :inet.set_lookup([:native])
-  end
 
   # To get SSL working, you will need to add the `https` key
   # to your endpoint configuration:
