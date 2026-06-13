@@ -40,9 +40,14 @@ if config_env() == :prod do
   # getaddrinfo(), which queries Fly.io's DNS at fdaa::3 and returns the
   # real IPv4 A records. We substitute the resolved IP into the DATABASE_URL
   # so Erlang never needs to resolve the hostname — it just connects to the
-  # IP directly via the default (IPv4) socket. Fly.io's infrastructure
-  # handles NAT64 at the gateway level.
-  database_url =
+  # IP directly via the default (IPv4) socket.
+  #
+  # Because we replace the hostname with a raw IPv4 address, SSL certificate
+  # hostname verification would fail (Neon's cert is for *.c-2.us-east-1.aws.neon.tech,
+  # not the IP). To fix this, we pass the original hostname as server_name_indication
+  # in ssl_opts, which tells Erlang's SSL to use that hostname for SNI and for
+  # certificate hostname verification.
+  {database_url, ssl_opts_extra} =
     if System.get_env("FLY_APP_NAME") do
       uri = URI.parse(database_url)
 
@@ -55,19 +60,20 @@ if config_env() == :prod do
               |> List.first()
 
             if ip && ip != uri.host do
-              String.replace(database_url, uri.host, ip)
+              {String.replace(database_url, uri.host, ip),
+               [server_name_indication: to_charlist(uri.host)]}
             else
-              database_url
+              {database_url, []}
             end
 
           _ ->
-            database_url
+            {database_url, []}
         end
       else
-        database_url
+        {database_url, []}
       end
     else
-      database_url
+      {database_url, []}
     end
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
@@ -78,7 +84,8 @@ if config_env() == :prod do
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     # For machines with several cores, consider starting multiple pools of `pool_size`
     # pool_count: 4,
-    socket_options: maybe_ipv6
+    socket_options: maybe_ipv6,
+    ssl_opts: ssl_opts_extra
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
