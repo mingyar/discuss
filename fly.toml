@@ -12,7 +12,7 @@ primary_region = "iad"
 [env]
   PHX_HOST = "live-discuss.fly.dev"
   PORT = "8080"
-  ECTO_IPV6 = "true"
+  ECTO_IPV6 = "false"
   MIX_ENV = "prod"
 
 [http_service]
