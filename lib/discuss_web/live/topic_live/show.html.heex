@@ -1,0 +1,121 @@
+<.header>
+  {@topic.title}
+  <:subtitle>
+    Created by {@topic.user.name || @topic.user.email} on {Calendar.strftime(
+      @topic.inserted_at,
+      "%B %d, %Y"
+    )}
+  </:subtitle>
+  <:actions>
+    <.link
+      :if={@current_user && @current_user.id == @topic.user_id}
+      patch={~p"/topics/#{@topic}/show/edit"}
+      phx-click={JS.push_focus()}
+    >
+      <.button>Edit topic</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<div class="mt-8">
+  <h2 class="text-2xl font-bold text-base-content mb-4">Comments</h2>
+
+  <div :if={@current_user} class="mb-8 bg-base-100 shadow rounded-lg p-6">
+    <.simple_form for={@comment_form} phx-submit="save_comment">
+      <.input
+        field={@comment_form[:content]}
+        type="textarea"
+        phx-hook="AutoFocus"
+        label="Add a comment"
+        rows="3"
+      />
+      <:actions>
+        <.button phx-disable-with="Posting...">Post Comment</.button>
+      </:actions>
+    </.simple_form>
+  </div>
+  
+<!-- Empty State for Comments -->
+  <div :if={@comments_count == 0} class="text-center py-12 bg-base-100 shadow rounded-xl">
+    <.icon
+      name="hero-chat-bubble-oval-left-ellipsis"
+      class="mx-auto h-12 w-12 text-base-content/50"
+    />
+    <h3 class="mt-2 text-sm font-medium text-base-content">No comments yet</h3>
+    <p class="mt-1 text-sm text-base-content/60">Be the first to share your thoughts!</p>
+  </div>
+  
+<!-- Comments List with Auto-scroll -->
+  <div
+    :if={@comments_count > 0}
+    id="comments-container"
+    phx-hook="ScrollToBottom"
+    class="space-y-4 max-h-96 overflow-y-auto"
+  >
+    <div id="comments" phx-update="stream">
+      <div
+        :for={{id, comment} <- @streams.comments}
+        id={id}
+        class="bg-base-100 shadow rounded-xl p-6 sm:p-8"
+      >
+        <div class="flex items-start justify-between">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-2">
+              <img
+                :if={comment.user.avatar_url}
+                src={comment.user.avatar_url}
+                alt={comment.user.name || comment.user.email}
+                class="w-8 h-8 rounded-full"
+              />
+              <div
+                :if={!comment.user.avatar_url}
+                class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center text-xs font-semibold shrink-0"
+              >
+                {String.first(comment.user.name || comment.user.email) |> String.upcase()}
+              </div>
+              <span class="font-semibold text-base-content truncate">
+                {comment.user.name || comment.user.email}
+              </span>
+              <span class="text-sm text-base-content/60 whitespace-nowrap">
+                {Calendar.strftime(comment.inserted_at, "%B %d, %Y at %I:%M %p")}
+              </span>
+            </div>
+            <p class="text-base-content/80 whitespace-pre-wrap">{comment.content}</p>
+          </div>
+
+          <button
+            :if={@current_user && @current_user.id == comment.user_id}
+            phx-click={
+              JS.push("delete_comment", value: %{id: comment.id})
+              |> JS.transition("fade-out-scale", to: "##{id}")
+            }
+            data-confirm="Are you sure you want to delete this comment?"
+            aria-label="Delete comment"
+            class="ml-4 text-error hover:text-error/80 shrink-0"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<.back navigate={~p"/topics"}>Back to topics</.back>
+
+<.modal
+  :if={@live_action == :edit}
+  id="topic-modal"
+  show
+  on_cancel={JS.patch(~p"/topics/#{@topic}")}
+>
+  <.live_component
+    module={DiscussWeb.TopicLive.FormComponent}
+    id={@topic.id}
+    title={@page_title}
+    action={@live_action}
+    topic={@topic}
+    current_user={@current_user}
+    patch={~p"/topics/#{@topic}"}
+  />
+</.modal>

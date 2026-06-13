@@ -1,0 +1,39 @@
+# fly.toml
+app = "live-discuss"
+
+primary_region = "iad"
+
+[build]
+
+[deploy]
+  release_command = "/app/bin/migrate"
+  strategy = "rolling"
+
+[env]
+  PHX_HOST = "live-discuss.fly.dev"
+  PORT = "8080"
+  ECTO_IPV6 = "true"
+  MIX_ENV = "prod"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 1000
+    soft_limit = 800
+
+  [[http_service.checks]]
+    path = "/health/liveness"
+    method = "GET"
+    interval = "30s"
+    timeout = "5s"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
