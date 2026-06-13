@@ -81,6 +81,12 @@ if config_env() == :prod do
   # Enable SSL for DB connection on Fly.io
   if System.get_env("FLY_APP_NAME") do
     config :discuss, Discuss.Repo, ssl: true
+
+    # Use OS native resolver (getaddrinfo) instead of Erlang's built-in DNS.
+    # On Fly.io's IPv6-only network, getaddrinfo handles DNS64 (IPv4→IPv6)
+    # synthesis via Fly.io's internal DNS resolver, while Erlang's own DNS
+    # resolver can't resolve IPv4-only hostnames.
+    :inet.set_lookup([:native])
   end
 
   # To get SSL working, you will need to add the `https` key
