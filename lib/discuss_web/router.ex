@@ -25,8 +25,6 @@ defmodule DiscussWeb.Router do
     live "/", TopicLive.Index, :index
     live "/topics", TopicLive.Index, :index
     live "/topics/new", TopicLive.Index, :new
-    live "/topics/:id/edit", TopicLive.Index, :edit
-    live "/topics/:id/show/edit", TopicLive.Show, :edit
     live "/topics/:id", TopicLive.Show, :show
   end
 

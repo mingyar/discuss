@@ -24,10 +24,83 @@ defmodule DiscussWeb.TopicLive.Show do
          socket
          |> assign(:topic, topic)
          |> assign(:page_title, topic.title)
+         |> assign(:editing, false)
          |> assign(:comments_count, comments_count)
          |> stream(:comments, topic.comments)
          |> assign_comment_form()}
     end
+  end
+
+  @impl true
+  def handle_event("start_edit", %{"id" => _topic_id}, socket) do
+    {:noreply, assign(socket, :editing, true)}
+  end
+
+  @impl true
+  def handle_event("save_edit", %{"topic_id" => topic_id_str, "title" => title}, socket) do
+    topic_id =
+      case Integer.parse(topic_id_str) do
+        {parsed, _} -> parsed
+        :error -> topic_id_str
+      end
+
+    case Discussions.get_topic(topic_id) do
+      nil ->
+        {:noreply,
+         socket
+         |> assign(:editing, false)
+         |> put_flash(:error, "Topic not found")}
+
+      topic ->
+        case Discussions.update_topic_by_user(socket.assigns.current_user, topic, %{
+               "title" => title
+             }) do
+          {:ok, updated_topic} ->
+            topic = Discussions.get_topic!(updated_topic.id)
+            comments_count = length(topic.comments)
+
+            {:noreply,
+             socket
+             |> assign(:topic, topic)
+             |> assign(:editing, false)
+             |> assign(:page_title, topic.title)
+             |> assign(:comments_count, comments_count)
+             |> stream(:comments, topic.comments, reset: true)
+             |> put_flash(:info, "Topic updated!")}
+
+          {:error, :unauthorized} ->
+            topic = Discussions.get_topic!(topic_id)
+            comments_count = length(topic.comments)
+
+            {:noreply,
+             socket
+             |> assign(:topic, topic)
+             |> assign(:editing, false)
+             |> assign(:comments_count, comments_count)
+             |> put_flash(:error, "You can only edit your own topics")}
+
+          {:error, %Ecto.Changeset{} = changeset} ->
+            message =
+              changeset
+              |> Ecto.Changeset.traverse_errors(fn {msg, opts} ->
+                Regex.replace(~r/%\{(\w+)\}/, msg, fn _, key ->
+                  opts[String.to_existing_atom(key)] |> to_string()
+                end)
+              end)
+              |> Enum.map(fn {key, msgs} -> "#{key}: #{Enum.join(msgs, ", ")}" end)
+              |> Enum.join("; ")
+
+            {:noreply,
+             socket
+             |> assign(:editing, false)
+             |> put_flash(:error, message)}
+        end
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_edit", _params, socket) do
+    {:noreply, assign(socket, :editing, false)}
   end
 
   @impl true

@@ -10,11 +10,19 @@ defmodule DiscussWeb.TopicLive.Index do
     # so they need the data. This is the SEO exception to the async rule.
     topics = Discussions.list_topics()
 
-    if connected?(socket), do: Discussions.subscribe_to_topics()
+    if connected?(socket) do
+      Discussions.subscribe_to_topics()
+
+      # Subscribe to each topic's channel for comment updates
+      for topic <- topics do
+        Discussions.subscribe_to_topic(topic.id)
+      end
+    end
 
     {:ok,
      socket
      |> assign(:loading, false)
+     |> assign(:editing_topic_id, nil)
      |> stream(:topics, topics)
      |> assign_create_form()}
   end
@@ -22,27 +30,6 @@ defmodule DiscussWeb.TopicLive.Index do
   @impl true
   def handle_params(params, _url, socket) do
     {:noreply, apply_action(socket, socket.assigns.live_action, params)}
-  end
-
-  defp apply_action(socket, :edit, %{"id" => id}) do
-    case Discussions.get_topic(id) do
-      nil ->
-        socket
-        |> put_flash(:error, "Topic not found")
-        |> push_navigate(to: ~p"/topics")
-
-      topic ->
-        if socket.assigns.current_user &&
-             socket.assigns.current_user.id == topic.user_id do
-          socket
-          |> assign(:page_title, "Edit Topic")
-          |> assign(:topic, topic)
-        else
-          socket
-          |> put_flash(:error, "You can only edit your own topics")
-          |> push_navigate(to: ~p"/topics")
-        end
-    end
   end
 
   defp apply_action(socket, :index, _params) do
@@ -75,11 +62,16 @@ defmodule DiscussWeb.TopicLive.Index do
   end
 
   @impl true
-  def handle_info({DiscussWeb.TopicLive.FormComponent, {:saved, topic}}, socket) do
-    # The FormComponent fires notify_parent on edit.
-    # The topic was already broadcast via update_topic/2 so the stream is already updated,
-    # but this ensures the parent side-effects (flash navigation) still occur.
-    # The duplicate stream_insert is a no-op since the DOM ID already exists.
+  def handle_info({:comment_created, comment}, socket) do
+    # Re-fetch the topic with comments preloaded and re-stream
+    topic = Discussions.get_topic!(comment.topic_id)
+    {:noreply, stream_insert(socket, :topics, topic)}
+  end
+
+  @impl true
+  def handle_info({:comment_deleted, comment}, socket) do
+    # Re-fetch the topic with comments preloaded and re-stream
+    topic = Discussions.get_topic!(comment.topic_id)
     {:noreply, stream_insert(socket, :topics, topic)}
   end
 
@@ -103,6 +95,87 @@ defmodule DiscussWeb.TopicLive.Index do
   end
 
   @impl true
+  def handle_event("start_edit", %{"id" => topic_id}, socket) do
+    topic = Discussions.get_topic!(topic_id)
+
+    {:noreply,
+     socket
+     |> assign(:editing_topic_id, topic_id)
+     |> stream_insert(:topics, topic)}
+  end
+
+  @impl true
+  def handle_event("save_edit", %{"topic_id" => topic_id_str, "title" => title}, socket) do
+    topic_id =
+      case Integer.parse(topic_id_str) do
+        {parsed, _} -> parsed
+        :error -> topic_id_str
+      end
+
+    case Discussions.get_topic(topic_id) do
+      nil ->
+        {:noreply,
+         socket
+         |> assign(:editing_topic_id, nil)
+         |> put_flash(:error, "Topic not found")}
+
+      topic ->
+        case Discussions.update_topic_by_user(socket.assigns.current_user, topic, %{
+               "title" => title
+             }) do
+          {:ok, updated_topic} ->
+            topic = Discussions.get_topic!(updated_topic.id)
+
+            {:noreply,
+             socket
+             |> assign(:editing_topic_id, nil)
+             |> stream_insert(:topics, topic)
+             |> put_flash(:info, "Topic updated!")}
+
+          {:error, :unauthorized} ->
+            topic = Discussions.get_topic!(topic_id)
+
+            {:noreply,
+             socket
+             |> assign(:editing_topic_id, nil)
+             |> stream_insert(:topics, topic)
+             |> put_flash(:error, "You can only edit your own topics")}
+
+          {:error, %Ecto.Changeset{} = changeset} ->
+            message =
+              changeset
+              |> Ecto.Changeset.traverse_errors(fn {msg, opts} ->
+                Regex.replace(~r/%\{(\w+)\}/, msg, fn _, key ->
+                  opts[String.to_existing_atom(key)] |> to_string()
+                end)
+              end)
+              |> Enum.map(fn {key, msgs} -> "#{key}: #{Enum.join(msgs, ", ")}" end)
+              |> Enum.join("; ")
+
+            {:noreply,
+             socket
+             |> assign(:editing_topic_id, nil)
+             |> put_flash(:error, message)}
+        end
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_edit", _params, socket) do
+    topic_id = socket.assigns.editing_topic_id
+
+    socket =
+      if topic_id do
+        topic = Discussions.get_topic!(topic_id)
+        stream_insert(socket, :topics, topic)
+      else
+        socket
+      end
+
+    {:noreply, assign(socket, :editing_topic_id, nil)}
+  end
+
+  @impl true
   def handle_event("delete", %{"id" => id}, socket) do
     case Discussions.get_topic(id) do
       nil ->
@@ -115,6 +188,31 @@ defmodule DiscussWeb.TopicLive.Index do
 
           {:error, :unauthorized} ->
             {:noreply, put_flash(socket, :error, "You can only delete your own topics")}
+        end
+    end
+  end
+
+  @impl true
+  def handle_event("create_comment", %{"topic-id" => topic_id, "content" => content}, socket) do
+    case Discussions.get_topic(topic_id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, "Topic not found")}
+
+      topic ->
+        case Discussions.create_comment(socket.assigns.current_user, topic, %{
+               "content" => content
+             }) do
+          {:ok, _comment} ->
+            # Re-fetch topic with comments preloaded and re-stream
+            topic = Discussions.get_topic!(topic_id)
+
+            {:noreply,
+             socket
+             |> stream_insert(:topics, topic)
+             |> put_flash(:info, "Comment added!")}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Could not add comment")}
         end
     end
   end
