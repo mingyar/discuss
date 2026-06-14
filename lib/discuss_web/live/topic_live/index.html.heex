@@ -102,7 +102,10 @@
           </div>
 
           <%!-- Navigable area: title (non-owner) + metadata + comment preview --%>
-          <.link navigate={~p"/topics/#{topic}"} class="block rounded-lg -mx-1 px-1 py-0.5 hover:bg-base-200/40 transition-colors duration-200">
+          <.link
+            navigate={~p"/topics/#{topic}"}
+            class="block rounded-lg -mx-1 px-1 py-0.5 hover:bg-base-200/40 transition-colors duration-200"
+          >
             <span
               :if={!@current_user || @current_user.id != topic.user_id}
               class="text-2xl sm:text-3xl font-semibold text-base-content line-clamp-2"
