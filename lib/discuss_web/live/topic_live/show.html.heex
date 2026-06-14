@@ -113,11 +113,11 @@
                 :if={comment.user.avatar_url}
                 src={comment.user.avatar_url}
                 alt={comment.user.name || comment.user.email}
-                class="w-8 h-8 rounded-full"
+                class="w-5 h-5 sm:w-6 sm:h-6 rounded-full shrink-0 mt-0.5"
               />
               <div
                 :if={!comment.user.avatar_url}
-                class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center text-sm font-semibold shrink-0"
+                class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary text-primary-content flex items-center justify-center text-[10px] font-semibold shrink-0 mt-0.5"
               >
                 {String.first(comment.user.name || comment.user.email) |> String.upcase()}
               </div>
