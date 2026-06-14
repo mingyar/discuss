@@ -23,7 +23,7 @@
         value={Phoenix.HTML.Form.normalize_value("text", @create_form[:title].value)}
         placeholder="What do you want to discuss?"
         autocomplete="off"
-        class="w-full bg-base-200 border-0 focus:ring-0 rounded-xl px-4 py-2.5 text-lg placeholder:text-base-content/40 outline-none"
+        class="w-full bg-base-200 border-0 focus:ring-0 rounded-xl px-4 py-2.5 text-sm sm:text-base placeholder:text-base-content/40 outline-none"
       />
       <.button class="shrink-0">Post</.button>
     </div>
@@ -37,7 +37,7 @@
 >
   <div class="flex items-center gap-3">
     <div class="w-10 h-10 rounded-full bg-base-300 shrink-0" />
-    <p class="flex-1 text-left text-base-content/50 text-lg">
+    <p class="flex-1 text-left text-base-content/50 text-sm sm:text-base">
       <.link href="/auth/github" class="text-primary hover:text-primary-focus font-medium">
         Sign in
       </.link>
@@ -50,13 +50,13 @@
   <!-- Empty State (only shown when this is the only child) -->
   <div id="topics-empty" class="hidden only:flex only:flex-col only:items-center only:py-12">
     <.icon name="hero-chat-bubble-left-right" class="mx-auto h-12 w-12 text-base-content/40" />
-    <h3 class="mt-4 text-lg font-medium text-base-content">No topics yet</h3>
+    <h3 class="mt-4 text-base sm:text-lg font-medium text-base-content">No topics yet</h3>
     <p class="mt-1 text-base text-base-content/50">Be the first to start a discussion!</p>
   </div>
   <div
     :for={{id, topic} <- @streams.topics}
     id={id}
-    class="group bg-base-100 shadow-sm hover:shadow-md border border-base-300 transition-all duration-200 rounded-xl p-6 sm:p-8"
+    class="group bg-base-100 shadow-sm hover:shadow-md border border-base-300 transition-all duration-200 rounded-xl p-4 sm:p-8"
   >
     <%= if @editing_topic_id == topic.id do %>
       <%!-- Edit mode: inline title edit form --%>
@@ -72,7 +72,7 @@
             phx-hook=".TitleEditFocus"
             phx-keydown="cancel_edit"
             phx-key="Escape"
-            class="w-full bg-base-200 border-0 focus:ring-2 focus:ring-primary rounded-xl px-4 py-2 text-2xl sm:text-3xl font-semibold outline-none"
+            class="w-full bg-base-200 border-0 focus:ring-2 focus:ring-primary rounded-xl px-4 py-2 text-lg sm:text-3xl font-semibold outline-none"
           />
           <.button class="shrink-0 btn-sm">Save</.button>
           <button
@@ -95,7 +95,7 @@
           >
             <span
               phx-click={JS.push("start_edit", value: %{id: topic.id})}
-              class="text-2xl sm:text-3xl font-semibold text-base-content hover:text-primary transition-colors line-clamp-2 cursor-pointer"
+              class="text-lg sm:text-3xl font-semibold text-base-content hover:text-primary transition-colors line-clamp-2 cursor-pointer"
             >
               {topic.title}
             </span>
@@ -108,41 +108,49 @@
           >
             <span
               :if={!@current_user || @current_user.id != topic.user_id}
-              class="text-2xl sm:text-3xl font-semibold text-base-content line-clamp-2"
+              class="text-lg sm:text-3xl font-semibold text-base-content line-clamp-2"
             >
               {topic.title}
             </span>
-            <p class="mt-1.5 text-lg text-base-content/60">
+            <p class="mt-1.5 text-sm sm:text-base text-base-content/60">
               Created by {topic.user.name || topic.user.email} · {Calendar.strftime(
                 topic.inserted_at,
                 "%B %d, %Y"
               )}
             </p>
             <%!-- Comments preview --%>
-            <div :if={topic.comments != []} class="mt-4 pt-4 border-t border-base-300">
-              <div :for={comment <- Enum.take(topic.comments, 2)} class="flex gap-2.5 mb-2.5">
+            <div
+              :if={topic.comments != []}
+              class="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-base-300"
+            >
+              <div
+                :for={comment <- Enum.take(topic.comments, 2)}
+                class="flex gap-1.5 sm:gap-2.5 mb-2 sm:mb-2.5"
+              >
                 <img
                   :if={comment.user && comment.user.avatar_url}
                   src={comment.user.avatar_url}
                   alt={comment.user.name || comment.user.email}
-                  class="w-6 h-6 rounded-full shrink-0 mt-0.5"
+                  class="w-5 h-5 sm:w-6 sm:h-6 rounded-full shrink-0 mt-0.5"
                 />
                 <div
                   :if={comment.user && !comment.user.avatar_url}
-                  class="w-6 h-6 rounded-full bg-base-300 shrink-0 mt-0.5 flex items-center justify-center text-[10px] font-semibold"
+                  class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-base-300 shrink-0 mt-0.5 flex items-center justify-center text-[10px] font-semibold"
                 >
                   {String.first(comment.user.name || comment.user.email) |> String.upcase()}
                 </div>
                 <div class="min-w-0">
-                  <span class="text-base font-medium text-base-content/80">
+                  <span class="text-sm sm:text-base font-medium text-base-content/80">
                     {comment.user.name || comment.user.email}
                   </span>
-                  <p class="text-lg text-base-content/70 break-words">{comment.content}</p>
+                  <p class="text-sm sm:text-base text-base-content/70 line-clamp-2">
+                    {comment.content}
+                  </p>
                 </div>
               </div>
               <p
                 :if={length(topic.comments) > 2}
-                class="text-base text-primary hover:text-primary-focus font-medium"
+                class="text-sm sm:text-base text-primary hover:text-primary-focus font-medium"
               >
                 View all {length(topic.comments)} comments →
               </p>
@@ -152,7 +160,7 @@
 
         <div
           :if={@current_user && @current_user.id == topic.user_id}
-          class="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          class="flex gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:sm:opacity-100 transition-opacity duration-200"
         >
           <button
             class="p-1.5 rounded-lg hover:bg-error/10 text-base-content/40 hover:text-error transition-colors"
@@ -169,23 +177,23 @@
       </div>
 
       <%!-- Inline comment form --%>
-      <div :if={@current_user} class="mt-4 pt-4 border-t border-base-300">
+      <div :if={@current_user} class="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-base-300">
         <.form
           id={"comment-form-#{topic.id}"}
           for={%{"content" => ""}}
           phx-submit="create_comment"
           phx-value-topic-id={topic.id}
         >
-          <div class="flex items-center gap-2.5">
+          <div class="flex items-center gap-2 sm:gap-2.5">
             <img
               :if={@current_user.avatar_url}
               src={@current_user.avatar_url}
               alt={@current_user.name || @current_user.email}
-              class="w-6 h-6 rounded-full shrink-0"
+              class="w-5 h-5 sm:w-6 sm:h-6 rounded-full shrink-0"
             />
             <div
               :if={!@current_user.avatar_url}
-              class="w-6 h-6 rounded-full bg-primary text-primary-content flex items-center justify-center text-[10px] font-semibold shrink-0"
+              class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary text-primary-content flex items-center justify-center text-[10px] font-semibold shrink-0"
             >
               {String.first(@current_user.name || @current_user.email) |> String.upcase()}
             </div>
@@ -194,9 +202,9 @@
               name="content"
               placeholder="Write a comment..."
               autocomplete="off"
-              class="flex-1 bg-base-200 border-0 focus:ring-0 rounded-full px-4 py-1.5 text-lg placeholder:text-base-content/40 outline-none"
+              class="flex-1 bg-base-200 border-0 focus:ring-0 rounded-full px-3 sm:px-4 py-1.5 text-sm sm:text-base placeholder:text-base-content/40 outline-none"
             />
-            <.button class="shrink-0 btn-sm">Reply</.button>
+            <.button class="shrink-0 btn-xs sm:btn-sm">Reply</.button>
           </div>
         </.form>
       </div>
