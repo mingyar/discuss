@@ -40,3 +40,19 @@
 - **Pattern**: Do NOT build Elixir releases inside Docker for Fly.io deployments. Build on the GitHub Actions runner (which has working OTP httpc), then use Docker with `ubuntu:24.04` to package the pre-built release.
 - **Why**: The OTP httpc TLS client fails inside Docker (`key_usage_mismatch` on `builds.hex.pm`) due to missing/broken CA bundle. The runner has no such issue. Also, `ubuntu:24.04` must match the runner's GLIBC version (2.39) to avoid "GLIBC not found" errors on the ERTS binary.
 - **Fix**: `.github/workflows/deploy.yml` — `mix deps.get && mix compile && mix assets.deploy && mix release` on runner, then `flyctl deploy --local-only` (uses Dockerfile to package the release artifact).
+
+### Lesson 6: GitHub Actions `_build` cache can distribute stale release artifacts
+- **Pattern**: Do NOT rely on `mix release` to fully overwrite a cached release directory. Even though `build_rel/1` deletes `releases/VERSION/`, the cached `_build/prod/rel/APP/` tree can reintroduce stale config files (`runtime.exs`, `sys.config`) if `mix release` skips or partially overwrites them.
+- **Why**: GitHub Actions caches the entire `_build/` directory keyed on `hashFiles('**/mix.lock')`. When `mix.lock` doesn't change between deploys (no deps added/removed), the previous release directory is restored. `mix release` does `File.rm_rf!(version_path)` and copies `config/runtime.exs` fresh via `File.cp!`, but in practice the cached files can persist — particularly when the workflow uses restore-keys fallback, which can match a cache from a markedly different build.
+- **Fix**: Clean the old release directory right before `mix release`:
+  ```yaml
+  - name: Clean old release to avoid stale config files
+    run: rm -rf _build/prod/rel/discuss/
+
+  - name: Build release
+    run: mix release
+  ```
+  Alternatively, include a commit hash or timestamp in the cache key to bust it on every deploy:
+  ```yaml
+  key: ${{ runner.os }}-build-prod-${{ hashFiles('**/mix.lock') }}-${{ github.sha }}
+  ```

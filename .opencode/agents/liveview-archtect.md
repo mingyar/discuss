@@ -105,7 +105,7 @@ Just organizing DOM elements?        → Function Component (NEVER LiveComponent
 
 ## Output Format
 
-Write to the path specified in the orchestrator's prompt (typically `.claude/plans/{slug}/research/liveview-decision.md`):
+Write to the path specified in the orchestrator's prompt (typically `.opencode/plans/{slug}/research/liveview-decision.md`):
 
 ```markdown
 # LiveView Architecture: {feature}

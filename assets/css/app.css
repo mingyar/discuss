@@ -61,10 +61,10 @@
   default: true;
   prefersdark: false;
   color-scheme: "light";
-  --color-base-100: oklch(98% 0 0);
-  --color-base-200: oklch(96% 0.001 286.375);
-  --color-base-300: oklch(92% 0.004 286.32);
-  --color-base-content: oklch(21% 0.006 285.885);
+  --color-base-100: oklch(96% 0.012 85);
+  --color-base-200: oklch(92% 0.016 85);
+  --color-base-300: oklch(87% 0.022 85);
+  --color-base-content: oklch(20% 0.012 85);
   --color-primary: oklch(70% 0.213 47.604);
   --color-primary-content: oklch(98% 0.016 73.684);
   --color-secondary: oklch(55% 0.027 264.364);
@@ -120,6 +120,30 @@ textarea:focus-visible {
 /* Fade in scale animation for toast */
 .fade-in-scale {
   transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Auto-dismiss toasts: pop in, wait, then fade out */
+.toast > .alert {
+  animation: toast-pop 0.3s ease-out, toast-fade 0.5s ease-in 3s forwards;
+}
+
+@keyframes toast-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-fade {
+  to {
+    opacity: 0;
+    transform: translateY(-0.5rem) scale(0.95);
+    pointer-events: none;
+  }
 }
 
 /* This file is for your main application CSS */

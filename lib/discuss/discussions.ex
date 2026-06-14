@@ -17,7 +17,7 @@ defmodule Discuss.Discussions do
   """
   def list_topics do
     Topic
-    |> preload(:user)
+    |> preload([:user, comments: [:user]])
     |> order_by([t], desc: t.inserted_at)
     |> Repo.all()
   end
@@ -179,7 +179,7 @@ defmodule Discuss.Discussions do
   end
 
   defp broadcast_topic({:ok, topic} = result, event) do
-    topic = Repo.preload(topic, :user)
+    topic = Repo.preload(topic, [:user, comments: [:user]])
 
     Phoenix.PubSub.broadcast(Discuss.PubSub, "topics", {event, topic})
 

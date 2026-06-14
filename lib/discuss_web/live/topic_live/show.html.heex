@@ -1,34 +1,82 @@
-<.header>
-  {@topic.title}
-  <:subtitle>
-    Created by {@topic.user.name || @topic.user.email} on {Calendar.strftime(
-      @topic.inserted_at,
-      "%B %d, %Y"
-    )}
-  </:subtitle>
-  <:actions>
-    <.link
-      :if={@current_user && @current_user.id == @topic.user_id}
-      patch={~p"/topics/#{@topic}/show/edit"}
-      phx-click={JS.push_focus()}
-    >
-      <.button>Edit topic</.button>
-    </.link>
-  </:actions>
-</.header>
+<div class="flex items-start justify-between gap-4 mb-6">
+  <div class="flex-1 min-w-0">
+    <%= if @editing do %>
+      <form phx-submit="save_edit">
+        <input type="hidden" name="topic_id" value={@topic.id} />
+        <div class="flex items-center gap-2">
+          <input
+            id="edit-title-input"
+            type="text"
+            name="title"
+            value={@topic.title}
+            autocomplete="off"
+            phx-hook=".TitleEditFocus"
+            phx-keydown="cancel_edit"
+            phx-key="Escape"
+            class="w-full bg-base-200 border-0 focus:ring-2 focus:ring-primary rounded-xl px-4 py-2 text-2xl sm:text-3xl font-bold outline-none"
+          />
+          <.button class="shrink-0 btn-sm">Save</.button>
+          <button
+            type="button"
+            phx-click="cancel_edit"
+            class="text-sm text-base-content/50 hover:text-base-content transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    <% else %>
+      <h1
+        :if={@current_user && @current_user.id == @topic.user_id}
+        phx-click={JS.push("start_edit", value: %{id: @topic.id})}
+        class="text-2xl sm:text-3xl font-bold text-base-content hover:text-primary transition-colors cursor-pointer"
+      >
+        {@topic.title}
+      </h1>
+      <h1
+        :if={!@current_user || @current_user.id != @topic.user_id}
+        class="text-2xl sm:text-3xl font-bold text-base-content"
+      >
+        {@topic.title}
+      </h1>
+    <% end %>
+    <p class="mt-1 text-lg text-base-content/60">
+      Created by {@topic.user.name || @topic.user.email} on {Calendar.strftime(
+        @topic.inserted_at,
+        "%B %d, %Y"
+      )}
+    </p>
+  </div>
+</div>
 
 <div class="mt-8">
-  <h2 class="text-2xl font-bold text-base-content mb-4">Comments</h2>
+  <h2 class="text-3xl font-bold text-base-content mb-4">Comments</h2>
 
-  <div :if={@current_user} class="mb-8 bg-base-100 shadow rounded-lg p-6">
+  <div :if={@current_user} class="mb-8 bg-base-100 shadow rounded-lg p-6 sm:p-8">
     <.simple_form for={@comment_form} phx-submit="save_comment">
       <.input
         field={@comment_form[:content]}
         type="textarea"
-        phx-hook="AutoFocus"
+        phx-hook=".CommentInput"
         label="Add a comment"
         rows="3"
       />
+      <script :type={Phoenix.LiveView.ColocatedHook} name=".CommentInput">
+        export default {
+          mounted() {
+            this.el.focus()
+            this.el.addEventListener("keydown", e => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault()
+                this.el.form.requestSubmit()
+              }
+            })
+            this.el.form.addEventListener("submit", () => {
+              setTimeout(() => { this.el.value = "" }, 0)
+            })
+          }
+        }
+      </script>
       <:actions>
         <.button phx-disable-with="Posting...">Post Comment</.button>
       </:actions>
@@ -41,8 +89,8 @@
       name="hero-chat-bubble-oval-left-ellipsis"
       class="mx-auto h-12 w-12 text-base-content/50"
     />
-    <h3 class="mt-2 text-sm font-medium text-base-content">No comments yet</h3>
-    <p class="mt-1 text-sm text-base-content/60">Be the first to share your thoughts!</p>
+    <h3 class="mt-2 text-lg font-medium text-base-content">No comments yet</h3>
+    <p class="mt-1 text-base text-base-content/60">Be the first to share your thoughts!</p>
   </div>
   
 <!-- Comments List with Auto-scroll -->
@@ -69,18 +117,18 @@
               />
               <div
                 :if={!comment.user.avatar_url}
-                class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center text-xs font-semibold shrink-0"
+                class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center text-sm font-semibold shrink-0"
               >
                 {String.first(comment.user.name || comment.user.email) |> String.upcase()}
               </div>
-              <span class="font-semibold text-base-content truncate">
+              <span class="text-lg font-semibold text-base-content truncate">
                 {comment.user.name || comment.user.email}
               </span>
-              <span class="text-sm text-base-content/60 whitespace-nowrap">
+              <span class="text-base text-base-content/60 whitespace-nowrap">
                 {Calendar.strftime(comment.inserted_at, "%B %d, %Y at %I:%M %p")}
               </span>
             </div>
-            <p class="text-base-content/80 whitespace-pre-wrap">{comment.content}</p>
+            <p class="text-lg text-base-content/80 whitespace-pre-wrap">{comment.content}</p>
           </div>
 
           <button
@@ -91,7 +139,7 @@
             }
             data-confirm="Are you sure you want to delete this comment?"
             aria-label="Delete comment"
-            class="ml-4 text-error hover:text-error/80 shrink-0"
+            class="ml-4 text-lg text-error hover:text-error/80 shrink-0"
           >
             Delete
           </button>
@@ -103,19 +151,11 @@
 
 <.back navigate={~p"/topics"}>Back to topics</.back>
 
-<.modal
-  :if={@live_action == :edit}
-  id="topic-modal"
-  show
-  on_cancel={JS.patch(~p"/topics/#{@topic}")}
->
-  <.live_component
-    module={DiscussWeb.TopicLive.FormComponent}
-    id={@topic.id}
-    title={@page_title}
-    action={@live_action}
-    topic={@topic}
-    current_user={@current_user}
-    patch={~p"/topics/#{@topic}"}
-  />
-</.modal>
+<script :type={Phoenix.LiveView.ColocatedHook} name=".TitleEditFocus">
+  export default {
+    mounted() {
+      this.el.focus()
+      this.el.select()
+    }
+  }
+</script>

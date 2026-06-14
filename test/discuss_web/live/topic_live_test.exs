@@ -12,7 +12,7 @@ defmodule DiscussWeb.TopicLiveTest do
 
       {:ok, index_live, _html} = live(conn, ~p"/topics")
 
-      assert has_element?(index_live, "#topics a", topic.title)
+      assert has_element?(index_live, "#topics span", topic.title)
     end
 
     test "shows empty state when no topics exist", %{conn: conn} do
@@ -59,11 +59,11 @@ defmodule DiscussWeb.TopicLiveTest do
 
       # Simulate another user creating a topic via PubSub broadcast
       {:ok, topic} = Discussions.create_topic(user, %{title: "Real-time topic"})
-      topic = Repo.preload(topic, :user)
+      topic = Repo.preload(topic, [:user, :comments])
 
       send(index_live.pid, {:topic_created, topic})
 
-      assert has_element?(index_live, "#topics a", "Real-time topic")
+      assert has_element?(index_live, "#topics span", "Real-time topic")
     end
 
     test "real-time delete when a topic is deleted", %{conn: conn} do
@@ -72,15 +72,15 @@ defmodule DiscussWeb.TopicLiveTest do
       {:ok, index_live, _html} = live(conn, ~p"/topics")
 
       # Verify the topic is visible first
-      assert has_element?(index_live, "#topics a", topic.title)
+      assert has_element?(index_live, "#topics span", topic.title)
 
       # Simulate another user deleting the topic via PubSub broadcast
       {:ok, deleted} = Discussions.delete_topic(topic)
-      deleted = Repo.preload(deleted, :user)
+      deleted = Repo.preload(deleted, [:user, :comments])
 
       send(index_live.pid, {:topic_deleted, deleted})
 
-      refute has_element?(index_live, "#topics a", topic.title)
+      refute has_element?(index_live, "#topics span", topic.title)
     end
 
     test "real-time update when a topic title changes", %{conn: conn} do
@@ -90,11 +90,11 @@ defmodule DiscussWeb.TopicLiveTest do
 
       # Simulate topic being updated by another user via PubSub broadcast
       {:ok, updated} = Discussions.update_topic(topic, %{title: "Updated from broadcast"})
-      updated = Repo.preload(updated, :user)
+      updated = Repo.preload(updated, [:user, :comments])
 
       send(index_live.pid, {:topic_updated, updated})
 
-      assert has_element?(index_live, "#topics a", "Updated from broadcast")
+      assert has_element?(index_live, "#topics span", "Updated from broadcast")
     end
 
     test "real-time update when topic is not in stream yet", %{conn: conn} do
@@ -110,11 +110,11 @@ defmodule DiscussWeb.TopicLiveTest do
         }
         |> Repo.insert!()
 
-      topic = Repo.preload(topic, :user)
+      topic = Repo.preload(topic, [:user, :comments])
 
       send(index_live.pid, {:topic_created, topic})
 
-      assert has_element?(index_live, "#topics a", "Brand new topic")
+      assert has_element?(index_live, "#topics span", "Brand new topic")
     end
 
     test "shows inline composer for authenticated user", %{conn: conn} do
@@ -147,11 +147,36 @@ defmodule DiscussWeb.TopicLiveTest do
       |> form("#create-topic-form", topic: %{title: "Posted via composer"})
       |> render_submit()
 
-      assert has_element?(index_live, "#topics a", "Posted via composer")
+      assert has_element?(index_live, "#topics span", "Posted via composer")
     end
   end
 
-  describe "Show - Real-time updates" do
+  describe "Show" do
+    test "owner can edit topic title inline", %{conn: conn} do
+      user = user_fixture()
+      topic = topic_fixture(user)
+      updated_title = "Updated title - #{System.unique_integer([:positive])}"
+
+      conn = init_test_session(conn, user_id: user.id)
+
+      {:ok, show_live, _html} = live(conn, ~p"/topics/#{topic}")
+
+      # Start editing by clicking the title
+      show_live |> element("h1", topic.title) |> render_click()
+
+      # Now submit the updated title via the form
+      show_live
+      |> form("form[phx-submit=save_edit]", %{topic_id: topic.id, title: updated_title})
+      |> render_submit()
+
+      assert has_element?(show_live, "h1", updated_title)
+      assert render(show_live) =~ "Topic updated!"
+
+      # Verify the change persisted in the database
+      updated = Discussions.get_topic!(topic.id)
+      assert updated.title == updated_title
+    end
+
     test "receives real-time comment updates", %{conn: conn} do
       user = user_fixture()
       topic = topic_fixture()
