@@ -88,5 +88,8 @@ config :phoenix_live_view,
   # Enable helpful, but potentially expensive runtime checks
   enable_expensive_runtime_checks: true
 
+# Tidewave dev MCP server project name.
+config :tidewave, :project_name, "discuss"
+
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
