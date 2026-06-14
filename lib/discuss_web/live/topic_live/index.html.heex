@@ -23,7 +23,7 @@
         value={Phoenix.HTML.Form.normalize_value("text", @create_form[:title].value)}
         placeholder="What do you want to discuss?"
         autocomplete="off"
-        class="w-full bg-base-200 border-0 focus:ring-0 rounded-xl px-4 py-2.5 text-lg placeholder:text-base-content/40 outline-none"
+        class="w-full bg-base-200 border-0 focus:ring-0 rounded-xl px-4 py-2.5 text-sm sm:text-lg placeholder:text-base-content/40 outline-none"
       />
       <.button class="shrink-0">Post</.button>
     </div>
@@ -37,7 +37,7 @@
 >
   <div class="flex items-center gap-3">
     <div class="w-10 h-10 rounded-full bg-base-300 shrink-0" />
-    <p class="flex-1 text-left text-base-content/50 text-lg">
+    <p class="flex-1 text-left text-base-content/50 text-sm sm:text-lg">
       <.link href="/auth/github" class="text-primary hover:text-primary-focus font-medium">
         Sign in
       </.link>
@@ -50,13 +50,13 @@
   <!-- Empty State (only shown when this is the only child) -->
   <div id="topics-empty" class="hidden only:flex only:flex-col only:items-center only:py-12">
     <.icon name="hero-chat-bubble-left-right" class="mx-auto h-12 w-12 text-base-content/40" />
-    <h3 class="mt-4 text-lg font-medium text-base-content">No topics yet</h3>
+    <h3 class="mt-4 text-base sm:text-lg font-medium text-base-content">No topics yet</h3>
     <p class="mt-1 text-base text-base-content/50">Be the first to start a discussion!</p>
   </div>
   <div
     :for={{id, topic} <- @streams.topics}
     id={id}
-    class="group bg-base-100 shadow-sm hover:shadow-md border border-base-300 transition-all duration-200 rounded-xl p-6 sm:p-8"
+    class="group bg-base-100 shadow-sm hover:shadow-md border border-base-300 transition-all duration-200 rounded-xl p-5 sm:p-8"
   >
     <%= if @editing_topic_id == topic.id do %>
       <%!-- Edit mode: inline title edit form --%>
@@ -72,7 +72,7 @@
             phx-hook=".TitleEditFocus"
             phx-keydown="cancel_edit"
             phx-key="Escape"
-            class="w-full bg-base-200 border-0 focus:ring-2 focus:ring-primary rounded-xl px-4 py-2 text-2xl sm:text-3xl font-semibold outline-none"
+            class="w-full bg-base-200 border-0 focus:ring-2 focus:ring-primary rounded-xl px-4 py-2 text-xl sm:text-3xl font-semibold outline-none"
           />
           <.button class="shrink-0 btn-sm">Save</.button>
           <button
@@ -95,7 +95,7 @@
           >
             <span
               phx-click={JS.push("start_edit", value: %{id: topic.id})}
-              class="text-2xl sm:text-3xl font-semibold text-base-content hover:text-primary transition-colors line-clamp-2 cursor-pointer"
+              class="text-xl sm:text-3xl font-semibold text-base-content hover:text-primary transition-colors line-clamp-2 cursor-pointer"
             >
               {topic.title}
             </span>
@@ -108,11 +108,11 @@
           >
             <span
               :if={!@current_user || @current_user.id != topic.user_id}
-              class="text-2xl sm:text-3xl font-semibold text-base-content line-clamp-2"
+              class="text-xl sm:text-3xl font-semibold text-base-content line-clamp-2"
             >
               {topic.title}
             </span>
-            <p class="mt-1.5 text-lg text-base-content/60">
+            <p class="mt-1.5 text-sm sm:text-lg text-base-content/60">
               Created by {topic.user.name || topic.user.email} · {Calendar.strftime(
                 topic.inserted_at,
                 "%B %d, %Y"
@@ -134,15 +134,17 @@
                   {String.first(comment.user.name || comment.user.email) |> String.upcase()}
                 </div>
                 <div class="min-w-0">
-                  <span class="text-base font-medium text-base-content/80">
+                  <span class="text-sm sm:text-base font-medium text-base-content/80">
                     {comment.user.name || comment.user.email}
                   </span>
-                  <p class="text-lg text-base-content/70 break-words">{comment.content}</p>
+                  <p class="text-sm sm:text-lg text-base-content/70 break-words">
+                    {comment.content}
+                  </p>
                 </div>
               </div>
               <p
                 :if={length(topic.comments) > 2}
-                class="text-base text-primary hover:text-primary-focus font-medium"
+                class="text-sm sm:text-base text-primary hover:text-primary-focus font-medium"
               >
                 View all {length(topic.comments)} comments →
               </p>
@@ -194,7 +196,7 @@
               name="content"
               placeholder="Write a comment..."
               autocomplete="off"
-              class="flex-1 bg-base-200 border-0 focus:ring-0 rounded-full px-4 py-1.5 text-lg placeholder:text-base-content/40 outline-none"
+              class="flex-1 bg-base-200 border-0 focus:ring-0 rounded-full px-4 py-1.5 text-sm sm:text-lg placeholder:text-base-content/40 outline-none"
             />
             <.button class="shrink-0 btn-sm">Reply</.button>
           </div>
