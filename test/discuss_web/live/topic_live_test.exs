@@ -232,5 +232,22 @@ defmodule DiscussWeb.TopicLiveTest do
       assert has_element?(show_live_1, "#comments", "From user 1")
       assert has_element?(show_live_2, "#comments", "From user 1")
     end
+
+    test "unauthenticated user cannot create comment via direct event", %{conn: conn} do
+      topic = topic_fixture()
+
+      # Mount Show page without auth
+      {:ok, show_live, _html} = live(conn, ~p"/topics/#{topic}")
+
+      # Attempt to create a comment by sending the event directly
+      show_live
+      |> render_hook("save_comment", %{"comment" => %{"content" => "Hacked comment"}})
+
+      # The comment should NOT appear in the list
+      refute has_element?(show_live, "#comments", "Hacked comment")
+
+      # Verify the flash message
+      assert render(show_live) =~ "must be signed in"
+    end
   end
 end

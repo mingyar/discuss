@@ -7,6 +7,13 @@ defmodule Discuss.DiscussionsTest do
   alias Discuss.Discussions
 
   describe "comments with PubSub" do
+    test "create_comment/3 returns unauthorized for nil user" do
+      topic = topic_fixture()
+
+      assert Discussions.create_comment(nil, topic, %{content: "Hacked"}) ==
+               {:error, :unauthorized}
+    end
+
     test "create_comment/3 broadcasts comment_created event" do
       user = user_fixture()
       topic = topic_fixture()
