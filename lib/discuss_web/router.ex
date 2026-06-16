@@ -11,21 +11,19 @@ defmodule DiscussWeb.Router do
     plug DiscussWeb.Plugs.SetUser
   end
 
-  pipeline :require_auth do
-    plug DiscussWeb.Plugs.RequireAuth
-  end
-
   pipeline :api do
     plug :accepts, ["json"]
   end
 
-  scope "/", DiscussWeb do
-    pipe_through :browser
+  live_session :topics, on_mount: [{DiscussWeb.UserAuth, :default}] do
+    scope "/", DiscussWeb do
+      pipe_through :browser
 
-    live "/", TopicLive.Index, :index
-    live "/topics", TopicLive.Index, :index
-    live "/topics/new", TopicLive.Index, :new
-    live "/topics/:id", TopicLive.Show, :show
+      live "/", TopicLive.Index, :index
+      live "/topics", TopicLive.Index, :index
+      live "/topics/new", TopicLive.Index, :new
+      live "/topics/:id", TopicLive.Show, :show
+    end
   end
 
   scope "/health", DiscussWeb do
