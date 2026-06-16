@@ -12,7 +12,7 @@ defmodule DiscussWeb.TopicLiveTest do
 
       {:ok, index_live, _html} = live(conn, ~p"/topics")
 
-      assert has_element?(index_live, "#topics span", topic.title)
+      assert has_element?(index_live, "#topics", topic.title)
     end
 
     test "shows empty state when no topics exist", %{conn: conn} do
@@ -63,7 +63,7 @@ defmodule DiscussWeb.TopicLiveTest do
 
       send(index_live.pid, {:topic_created, topic})
 
-      assert has_element?(index_live, "#topics span", "Real-time topic")
+      assert has_element?(index_live, "#topics", "Real-time topic")
     end
 
     test "real-time delete when a topic is deleted", %{conn: conn} do
@@ -72,7 +72,7 @@ defmodule DiscussWeb.TopicLiveTest do
       {:ok, index_live, _html} = live(conn, ~p"/topics")
 
       # Verify the topic is visible first
-      assert has_element?(index_live, "#topics span", topic.title)
+      assert has_element?(index_live, "#topics", topic.title)
 
       # Simulate another user deleting the topic via PubSub broadcast
       {:ok, deleted} = Discussions.delete_topic(topic)
@@ -80,7 +80,7 @@ defmodule DiscussWeb.TopicLiveTest do
 
       send(index_live.pid, {:topic_deleted, deleted})
 
-      refute has_element?(index_live, "#topics span", topic.title)
+      refute has_element?(index_live, "#topics", topic.title)
     end
 
     test "real-time update when a topic title changes", %{conn: conn} do
@@ -94,7 +94,7 @@ defmodule DiscussWeb.TopicLiveTest do
 
       send(index_live.pid, {:topic_updated, updated})
 
-      assert has_element?(index_live, "#topics span", "Updated from broadcast")
+      assert has_element?(index_live, "#topics", "Updated from broadcast")
     end
 
     test "real-time update when topic is not in stream yet", %{conn: conn} do
@@ -114,7 +114,7 @@ defmodule DiscussWeb.TopicLiveTest do
 
       send(index_live.pid, {:topic_created, topic})
 
-      assert has_element?(index_live, "#topics span", "Brand new topic")
+      assert has_element?(index_live, "#topics", "Brand new topic")
     end
 
     test "shows inline composer for authenticated user", %{conn: conn} do
@@ -147,7 +147,7 @@ defmodule DiscussWeb.TopicLiveTest do
       |> form("#create-topic-form", topic: %{title: "Posted via composer"})
       |> render_submit()
 
-      assert has_element?(index_live, "#topics span", "Posted via composer")
+      assert has_element?(index_live, "#topics", "Posted via composer")
     end
   end
 
@@ -186,7 +186,7 @@ defmodule DiscussWeb.TopicLiveTest do
       {:ok, _comment} = Discussions.create_comment(user, topic, %{content: "New comment"})
 
       # LiveView should receive the update automatically
-      assert has_element?(show_live, "#comments p", "New comment")
+      assert has_element?(show_live, "#comments", "New comment")
     end
 
     test "receives real-time comment deletion", %{conn: conn} do
@@ -195,13 +195,13 @@ defmodule DiscussWeb.TopicLiveTest do
       {:ok, show_live, _html} = live(conn, ~p"/topics/#{topic}")
 
       # Verify that the comment is there
-      assert has_element?(show_live, "#comments p", comment.content)
+      assert has_element?(show_live, "#comments", comment.content)
 
       # Delete the comment
       {:ok, _} = Discussions.delete_comment(comment)
 
       # The comment should disappear automatically
-      refute has_element?(show_live, "#comments p", comment.content)
+      refute has_element?(show_live, "#comments", comment.content)
     end
 
     test "multiple users see same comments in real-time", %{conn: conn} do
@@ -216,8 +216,8 @@ defmodule DiscussWeb.TopicLiveTest do
       {:ok, _comment} = Discussions.create_comment(user, topic, %{content: "From user 1"})
 
       # Both should see it
-      assert has_element?(show_live_1, "#comments p", "From user 1")
-      assert has_element?(show_live_2, "#comments p", "From user 1")
+      assert has_element?(show_live_1, "#comments", "From user 1")
+      assert has_element?(show_live_2, "#comments", "From user 1")
     end
   end
 end

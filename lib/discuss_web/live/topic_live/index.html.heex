@@ -27,6 +27,12 @@
       />
       <.button class="shrink-0">Post</.button>
     </div>
+    <textarea
+      name={@create_form[:content].name}
+      placeholder="Continue elaborating here..."
+      rows="3"
+      class="w-full bg-base-200 border-0 focus:ring-0 rounded-xl px-4 py-2 text-sm sm:text-base placeholder:text-base-content/40 outline-none mt-2 resize-none"
+    ></textarea>
   </.form>
 </div>
 
@@ -83,6 +89,12 @@
             Cancel
           </button>
         </div>
+        <textarea
+          name="content"
+          placeholder="Continue elaborating here..."
+          rows="3"
+          class="w-full bg-base-200 border-0 focus:ring-2 focus:ring-primary rounded-xl px-4 py-2 text-sm sm:text-base placeholder:text-base-content/40 outline-none mt-2 resize-none"
+        ><%= topic.content %></textarea>
       </form>
     <% else %>
       <%!-- View mode: title + metadata + comment preview (navigable areas highlighted on hover) --%>
@@ -101,61 +113,83 @@
             </span>
           </div>
 
-          <%!-- Navigable area: title (non-owner) + metadata + comment preview --%>
-          <.link
-            navigate={~p"/topics/#{topic}"}
-            class="block rounded-lg -mx-1 px-1 py-0.5 hover:bg-base-200/40 transition-colors duration-200"
+          <%!-- Non-owner: title is plain text (no nav, no edit) --%>
+          <span
+            :if={!@current_user || @current_user.id != topic.user_id}
+            class="text-lg sm:text-3xl font-semibold text-base-content line-clamp-2"
           >
-            <span
-              :if={!@current_user || @current_user.id != topic.user_id}
-              class="text-lg sm:text-3xl font-semibold text-base-content line-clamp-2"
+            {topic.title}
+          </span>
+
+          <div
+            :if={topic.content}
+            id={"content-preview-#{topic.id}"}
+            class="mt-1 text-sm sm:text-base text-base-content/80 line-clamp-2 markdown-body"
+          >
+            {render_markdown(topic.content)}
+          </div>
+          <button
+            :if={topic.content}
+            id={"expand-btn-#{topic.id}"}
+            type="button"
+            phx-hook=".TogglePreview"
+            data-content-id={"content-preview-#{topic.id}"}
+            class="mt-1 text-xs text-primary/50 hover:text-primary transition-colors showmore"
+          >
+            <span class="showmore-text">Show more</span>
+            <span class="showless-text hidden">Show less</span>
+          </button>
+          <p class="mt-1.5 text-sm sm:text-base text-base-content/60">
+            Created by {topic.user.name || topic.user.email} · {Calendar.strftime(
+              topic.inserted_at,
+              "%B %d, %Y"
+            )}
+            <span class="mx-1.5 text-base-content/30">·</span>
+            <.link
+              navigate={~p"/topics/#{topic}"}
+              class="text-primary hover:text-primary-focus transition-colors"
             >
-              {topic.title}
-            </span>
-            <p class="mt-1.5 text-sm sm:text-base text-base-content/60">
-              Created by {topic.user.name || topic.user.email} · {Calendar.strftime(
-                topic.inserted_at,
-                "%B %d, %Y"
-              )}
-            </p>
-            <%!-- Comments preview --%>
+              View discussion →
+            </.link>
+          </p>
+          <%!-- Comments preview --%>
+          <div
+            :if={topic.comments != []}
+            class="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-base-300"
+          >
             <div
-              :if={topic.comments != []}
-              class="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-base-300"
+              :for={comment <- Enum.take(topic.comments, 2)}
+              class="flex gap-1.5 sm:gap-2.5 mb-2 sm:mb-2.5"
             >
+              <img
+                :if={comment.user && comment.user.avatar_url}
+                src={comment.user.avatar_url}
+                alt={comment.user.name || comment.user.email}
+                class="w-5 h-5 sm:w-6 sm:h-6 rounded-full shrink-0 mt-0.5"
+              />
               <div
-                :for={comment <- Enum.take(topic.comments, 2)}
-                class="flex gap-1.5 sm:gap-2.5 mb-2 sm:mb-2.5"
+                :if={comment.user && !comment.user.avatar_url}
+                class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-base-300 shrink-0 mt-0.5 flex items-center justify-center text-[10px] font-semibold"
               >
-                <img
-                  :if={comment.user && comment.user.avatar_url}
-                  src={comment.user.avatar_url}
-                  alt={comment.user.name || comment.user.email}
-                  class="w-5 h-5 sm:w-6 sm:h-6 rounded-full shrink-0 mt-0.5"
-                />
-                <div
-                  :if={comment.user && !comment.user.avatar_url}
-                  class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-base-300 shrink-0 mt-0.5 flex items-center justify-center text-[10px] font-semibold"
-                >
-                  {String.first(comment.user.name || comment.user.email) |> String.upcase()}
-                </div>
-                <div class="min-w-0">
-                  <span class="text-sm sm:text-base font-medium text-base-content/80">
-                    {comment.user.name || comment.user.email}
-                  </span>
-                  <p class="text-sm sm:text-base text-base-content/70 line-clamp-2">
-                    {comment.content}
-                  </p>
+                {String.first(comment.user.name || comment.user.email) |> String.upcase()}
+              </div>
+              <div class="min-w-0">
+                <span class="text-sm sm:text-base font-medium text-base-content/80">
+                  {comment.user.name || comment.user.email}
+                </span>
+                <div class="text-sm sm:text-base text-base-content/80 line-clamp-2 markdown-body">
+                  {render_markdown(comment.content)}
                 </div>
               </div>
-              <p
-                :if={length(topic.comments) > 2}
-                class="text-sm sm:text-base text-primary hover:text-primary-focus font-medium"
-              >
-                View all {length(topic.comments)} comments →
-              </p>
             </div>
-          </.link>
+            <.link
+              :if={length(topic.comments) > 2}
+              navigate={~p"/topics/#{topic}"}
+              class="text-sm sm:text-base text-primary hover:text-primary-focus font-medium inline-block"
+            >
+              View all {length(topic.comments)} comments →
+            </.link>
+          </div>
         </div>
 
         <div
@@ -197,13 +231,14 @@
             >
               {String.first(@current_user.name || @current_user.email) |> String.upcase()}
             </div>
-            <input
-              type="text"
+            <textarea
+              id={"comment-input-#{topic.id}"}
               name="content"
               placeholder="Write a comment..."
-              autocomplete="off"
-              class="flex-1 bg-base-200 border-0 focus:ring-0 rounded-full px-3 sm:px-4 py-1.5 text-sm sm:text-base placeholder:text-base-content/40 outline-none"
-            />
+              rows="1"
+              phx-hook=".CommentInput"
+              class="flex-1 bg-base-200 border-0 focus:ring-0 rounded-xl px-3 sm:px-4 py-1.5 text-sm sm:text-base placeholder:text-base-content/40 outline-none resize-none"
+            ></textarea>
             <.button class="shrink-0 btn-xs sm:btn-sm">Reply</.button>
           </div>
         </.form>
@@ -217,6 +252,41 @@
     mounted() {
       this.el.focus()
       this.el.select()
+    }
+  }
+</script>
+
+<script :type={Phoenix.LiveView.ColocatedHook} name=".CommentInput">
+  export default {
+    mounted() {
+      this.el.addEventListener("keydown", e => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault()
+          this.el.form.requestSubmit()
+        }
+      })
+    }
+  }
+</script>
+
+<script :type={Phoenix.LiveView.ColocatedHook} name=".TogglePreview">
+  export default {
+    mounted() {
+      const content = document.getElementById(this.el.dataset.contentId)
+      // Hide toggle if content doesn't overflow the line-clamp
+      if (content && content.scrollHeight <= content.clientHeight) {
+        this.el.classList.add("hidden")
+        return
+      }
+      this.el.addEventListener("click", e => {
+        e.preventDefault()
+        e.stopPropagation()
+        if (content) {
+          content.classList.toggle("line-clamp-2")
+        }
+        this.el.querySelector(".showmore-text")?.classList.toggle("hidden")
+        this.el.querySelector(".showless-text")?.classList.toggle("hidden")
+      })
     }
   }
 </script>

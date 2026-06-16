@@ -24,6 +24,12 @@
             Cancel
           </button>
         </div>
+        <textarea
+          name="content"
+          placeholder="Continue elaborating here..."
+          rows="3"
+          class="w-full bg-base-200 border-0 focus:ring-2 focus:ring-primary rounded-xl px-4 py-2 text-sm sm:text-base placeholder:text-base-content/40 outline-none mt-2 resize-none"
+        ><%= @topic.content %></textarea>
       </form>
     <% else %>
       <h1
@@ -40,6 +46,12 @@
         {@topic.title}
       </h1>
     <% end %>
+    <div
+      :if={@topic.content}
+      class="mt-4 text-base sm:text-lg text-base-content/80 markdown-body"
+    >
+      {render_markdown(@topic.content)}
+    </div>
     <p class="mt-1 text-sm sm:text-base text-base-content/60">
       Created by {@topic.user.name || @topic.user.email} on {Calendar.strftime(
         @topic.inserted_at,
@@ -128,9 +140,9 @@
                 {Calendar.strftime(comment.inserted_at, "%B %d, %Y at %I:%M %p")}
               </span>
             </div>
-            <p class="text-sm sm:text-base text-base-content/80 whitespace-pre-wrap">
-              {comment.content}
-            </p>
+            <div class="text-sm sm:text-base text-base-content/80 markdown-body">
+              {render_markdown(comment.content)}
+            </div>
           </div>
 
           <button
