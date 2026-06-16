@@ -123,6 +123,9 @@ defmodule DiscussWeb.TopicLive.Show do
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, comment_form: to_form(changeset))}
+
+      {:error, :unauthorized} ->
+        {:noreply, put_flash(socket, :error, "You must be signed in to comment")}
     end
   end
 

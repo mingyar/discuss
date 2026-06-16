@@ -216,8 +216,11 @@ defmodule DiscussWeb.TopicLive.Index do
              |> stream_insert(:topics, topic)
              |> put_flash(:info, "Comment added!")}
 
-          {:error, _changeset} ->
+          {:error, %Ecto.Changeset{}} ->
             {:noreply, put_flash(socket, :error, "Could not add comment")}
+
+          {:error, :unauthorized} ->
+            {:noreply, put_flash(socket, :error, "You must be signed in to comment")}
         end
     end
   end

@@ -125,7 +125,11 @@ defmodule Discuss.Discussions do
 
   @doc """
   Creates a new comment and broadcasts to connected users.
+  Returns `{:ok, comment}` on success, `{:error, changeset}` on validation failure,
+  or `{:error, :unauthorized}` if no user is provided.
   """
+  def create_comment(nil, _topic, _attrs), do: {:error, :unauthorized}
+
   def create_comment(user, topic, attrs) do
     topic
     |> Ecto.build_assoc(:comments)
