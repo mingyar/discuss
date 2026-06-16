@@ -149,6 +149,19 @@ defmodule DiscussWeb.TopicLiveTest do
 
       assert has_element?(index_live, "#topics", "Posted via composer")
     end
+
+    test "unauthenticated user cannot create topic via direct event", %{conn: conn} do
+      {:ok, index_live, _html} = live(conn, ~p"/topics")
+
+      # Attempt to create a topic by sending the event directly
+      index_live |> render_hook("create_topic", %{"topic" => %{"title" => "Hacked topic"}})
+
+      # The topic should NOT appear in the list
+      refute has_element?(index_live, "#topics", "Hacked topic")
+
+      # Verify flash message is shown
+      assert render(index_live) =~ "You must be signed in"
+    end
   end
 
   describe "Show" do

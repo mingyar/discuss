@@ -53,8 +53,6 @@ defmodule DiscussWeb do
       use Phoenix.LiveView,
         layout: {DiscussWeb.Layouts, :app}
 
-      on_mount DiscussWeb.UserAuth
-
       unquote(html_helpers())
     end
   end

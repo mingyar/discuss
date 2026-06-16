@@ -12,23 +12,4 @@ defmodule DiscussWeb.UserAuth do
 
     {:cont, assign(socket, :current_user, user)}
   end
-
-  def on_mount(:require_authenticated_user, _params, session, socket) do
-    case on_mount(:default, nil, session, socket) do
-      {:cont, socket} ->
-        if socket.assigns.current_user do
-          {:cont, socket}
-        else
-          socket =
-            socket
-            |> Phoenix.LiveView.put_flash(:error, "You must be logged in to access this page")
-            |> Phoenix.LiveView.redirect(to: "/")
-
-          {:halt, socket}
-        end
-
-      {:halt, _socket} = halt_tuple ->
-        halt_tuple
-    end
-  end
 end
