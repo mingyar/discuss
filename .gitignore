@@ -37,3 +37,6 @@ npm-debug.log
 
 # Local dev secrets
 /.env
+
+# OpenCode / Claude planning artifacts
+/.claude/

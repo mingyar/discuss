@@ -37,7 +37,11 @@ defmodule DiscussWeb.TopicLive.Show do
   end
 
   @impl true
-  def handle_event("save_edit", %{"topic_id" => topic_id_str, "title" => title}, socket) do
+  def handle_event(
+        "save_edit",
+        %{"topic_id" => topic_id_str, "title" => title, "content" => content},
+        socket
+      ) do
     topic_id =
       case Integer.parse(topic_id_str) do
         {parsed, _} -> parsed
@@ -53,7 +57,8 @@ defmodule DiscussWeb.TopicLive.Show do
 
       topic ->
         case Discussions.update_topic_by_user(socket.assigns.current_user, topic, %{
-               "title" => title
+               "title" => title,
+               "content" => content
              }) do
           {:ok, updated_topic} ->
             topic = Discussions.get_topic!(updated_topic.id)

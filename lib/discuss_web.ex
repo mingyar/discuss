@@ -96,6 +96,16 @@ defmodule DiscussWeb do
 
       # Routes generation with the ~p sigil
       unquote(verified_routes())
+
+      # Markdown rendering — single newlines become <br> so plain-text line breaks show
+      def render_markdown(nil), do: ""
+      def render_markdown(""), do: ""
+
+      def render_markdown(text) when is_binary(text) do
+        text
+        |> Earmark.as_html!(%Earmark.Options{breaks: true})
+        |> Phoenix.HTML.raw()
+      end
     end
   end
 

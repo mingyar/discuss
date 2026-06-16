@@ -21,7 +21,7 @@ defmodule Discuss.MixProject do
   def application do
     [
       mod: {Discuss.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :earmark]
     ]
   end
 
@@ -79,6 +79,7 @@ defmodule Discuss.MixProject do
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
       {:ueberauth, "~> 0.10"},
+      {:earmark, "~> 1.4"},
       {:ueberauth_github, "~> 0.8"}
     ]
   end
