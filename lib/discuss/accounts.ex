@@ -37,6 +37,18 @@ defmodule Discuss.Accounts do
     end
   end
 
+  def find_or_create_user(attrs)
+      when is_map(attrs) and is_map_key(attrs, "provider") and is_map_key(attrs, "uid") do
+    # String keys from e.g. Ueberauth — normalize to atom keys and delegate
+    normalized =
+      Map.new(attrs, fn
+        {key, val} when is_binary(key) -> {String.to_existing_atom(key), val}
+        {key, val} -> {key, val}
+      end)
+
+    find_or_create_user(normalized)
+  end
+
   @doc """
   Creates a new user.
   """

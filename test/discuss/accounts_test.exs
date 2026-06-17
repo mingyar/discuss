@@ -71,6 +71,19 @@ defmodule Discuss.AccountsTest do
       assert user.email == existing.email
     end
 
+    test "handles string keys by normalizing them" do
+      attrs = %{
+        "provider" => "github",
+        "uid" => "string_key_uid",
+        "email" => "string@example.com",
+        "name" => "String Key"
+      }
+
+      assert {:ok, %User{} = user} = Accounts.find_or_create_user(attrs)
+      assert user.uid == "string_key_uid"
+      assert user.provider == "github"
+    end
+
     test "raises FunctionClauseError when provider key is missing" do
       assert_raise FunctionClauseError, fn ->
         Accounts.find_or_create_user(%{uid: "no_provider"})
