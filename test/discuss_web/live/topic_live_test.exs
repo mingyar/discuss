@@ -170,7 +170,10 @@ defmodule DiscussWeb.TopicLiveTest do
 
       # Attempt to create a comment by sending the event directly
       index_live
-      |> render_hook("create_comment", %{"topic-id" => to_string(topic.id), "content" => "Hacked comment"})
+      |> render_hook("create_comment", %{
+        "topic-id" => to_string(topic.id),
+        "content" => "Hacked comment"
+      })
 
       # The comment should NOT appear
       refute has_element?(index_live, "#comments", "Hacked comment")
