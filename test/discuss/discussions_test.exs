@@ -62,12 +62,12 @@ defmodule Discuss.DiscussionsTest do
 
       Discussions.subscribe_to_topics()
 
-      attrs = %{title: "New PubSub Topic"}
-      {:ok, topic} = Discussions.create_topic(user, attrs)
+      title = "New PubSub Topic"
+      {:ok, topic} = Discussions.create_topic(user, %{title: title})
 
-      assert_receive {:topic_created, received_topic}
+      # Match on title to avoid picking up messages from parallel tests (async: true)
+      assert_receive {:topic_created, %{title: ^title} = received_topic}
       assert received_topic.id == topic.id
-      assert received_topic.title == "New PubSub Topic"
     end
 
     test "update_topic/1 broadcasts topic_updated event" do
@@ -75,12 +75,12 @@ defmodule Discuss.DiscussionsTest do
 
       Discussions.subscribe_to_topics()
 
+      title = "Updated Title"
       {:ok, updated_topic} =
-        Discussions.update_topic_by_user(topic.user, topic, %{title: "Updated Title"})
+        Discussions.update_topic_by_user(topic.user, topic, %{title: title})
 
-      assert_receive {:topic_updated, received_topic}
+      assert_receive {:topic_updated, %{title: ^title} = received_topic}
       assert received_topic.id == updated_topic.id
-      assert received_topic.title == "Updated Title"
     end
 
     test "delete_topic/1 broadcasts topic_deleted event" do
@@ -88,10 +88,10 @@ defmodule Discuss.DiscussionsTest do
 
       Discussions.subscribe_to_topics()
 
-      {:ok, deleted_topic} = Discussions.delete_topic(topic)
+      topic_id = topic.id
+      {:ok, _deleted_topic} = Discussions.delete_topic(topic)
 
-      assert_receive {:topic_deleted, received_topic}
-      assert received_topic.id == deleted_topic.id
+      assert_receive {:topic_deleted, %{id: ^topic_id}}
     end
 
     test "subscribe_to_topics/0 subscribes current process" do
@@ -101,7 +101,7 @@ defmodule Discuss.DiscussionsTest do
 
       {:ok, _topic} = Discussions.create_topic(user, %{title: "Trigger"})
 
-      assert_receive {:topic_created, _topic}
+      assert_receive {:topic_created, %{title: "Trigger"}}
     end
   end
 end
