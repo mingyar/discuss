@@ -63,16 +63,22 @@ defmodule DiscussWeb.TopicLive.Index do
 
   @impl true
   def handle_info({:comment_created, comment}, socket) do
-    # Re-fetch the topic with comments preloaded and re-stream
-    topic = Discussions.get_topic!(comment.topic_id)
-    {:noreply, stream_insert(socket, :topics, topic)}
+    # Re-fetch the topic with comments preloaded; if the topic was deleted
+    # between the comment broadcast and this handler, silently no-op
+    case Discussions.get_topic(comment.topic_id) do
+      nil -> {:noreply, socket}
+      topic -> {:noreply, stream_insert(socket, :topics, topic)}
+    end
   end
 
   @impl true
   def handle_info({:comment_deleted, comment}, socket) do
-    # Re-fetch the topic with comments preloaded and re-stream
-    topic = Discussions.get_topic!(comment.topic_id)
-    {:noreply, stream_insert(socket, :topics, topic)}
+    # Re-fetch the topic with comments preloaded; if the topic was deleted
+    # between the comment broadcast and this handler, silently no-op
+    case Discussions.get_topic(comment.topic_id) do
+      nil -> {:noreply, socket}
+      topic -> {:noreply, stream_insert(socket, :topics, topic)}
+    end
   end
 
   @impl true
@@ -96,12 +102,16 @@ defmodule DiscussWeb.TopicLive.Index do
 
   @impl true
   def handle_event("start_edit", %{"id" => topic_id}, socket) do
-    topic = Discussions.get_topic!(topic_id)
+    case Discussions.get_topic(topic_id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, "Topic not found")}
 
-    {:noreply,
-     socket
-     |> assign(:editing_topic_id, topic_id)
-     |> stream_insert(:topics, topic)}
+      topic ->
+        {:noreply,
+         socket
+         |> assign(:editing_topic_id, topic_id)
+         |> stream_insert(:topics, topic)}
+    end
   end
 
   @impl true
@@ -171,8 +181,10 @@ defmodule DiscussWeb.TopicLive.Index do
 
     socket =
       if topic_id do
-        topic = Discussions.get_topic!(topic_id)
-        stream_insert(socket, :topics, topic)
+        case Discussions.get_topic(topic_id) do
+          nil -> socket
+          topic -> stream_insert(socket, :topics, topic)
+        end
       else
         socket
       end
