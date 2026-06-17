@@ -76,6 +76,7 @@ defmodule Discuss.DiscussionsTest do
       Discussions.subscribe_to_topics()
 
       title = "Updated Title"
+
       {:ok, updated_topic} =
         Discussions.update_topic_by_user(topic.user, topic, %{title: title})
 
