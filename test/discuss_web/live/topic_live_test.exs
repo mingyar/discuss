@@ -89,7 +89,9 @@ defmodule DiscussWeb.TopicLiveTest do
       {:ok, index_live, _html} = live(conn, ~p"/topics")
 
       # Simulate topic being updated by another user via PubSub broadcast
-      {:ok, updated} = Discussions.update_topic(topic, %{title: "Updated from broadcast"})
+      {:ok, updated} =
+        Discussions.update_topic_by_user(topic.user, topic, %{title: "Updated from broadcast"})
+
       updated = Repo.preload(updated, [:user, :comments])
 
       send(index_live.pid, {:topic_updated, updated})

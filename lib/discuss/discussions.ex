@@ -62,10 +62,7 @@ defmodule Discuss.Discussions do
     |> broadcast_topic(:topic_created)
   end
 
-  @doc """
-  Updates an existing topic and broadcasts to connected users.
-  """
-  def update_topic(%Topic{} = topic, attrs) do
+  defp update_topic(%Topic{} = topic, attrs) do
     topic
     |> Topic.changeset(attrs)
     |> Repo.update()

@@ -75,7 +75,8 @@ defmodule Discuss.DiscussionsTest do
 
       Discussions.subscribe_to_topics()
 
-      {:ok, updated_topic} = Discussions.update_topic(topic, %{title: "Updated Title"})
+      {:ok, updated_topic} =
+        Discussions.update_topic_by_user(topic.user, topic, %{title: "Updated Title"})
 
       assert_receive {:topic_updated, received_topic}
       assert received_topic.id == updated_topic.id
