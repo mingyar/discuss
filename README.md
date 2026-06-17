@@ -1,15 +1,15 @@
 <div align="center">
 
-# Discuss
-
-**Real-time discussion board built with Phoenix LiveView**
-
 [![CI](https://github.com/mingyar/discuss/actions/workflows/deploy.yml/badge.svg)](https://github.com/mingyar/discuss/actions/workflows/deploy.yml)
 [![Elixir](https://img.shields.io/badge/Elixir-1.18-4B275F?logo=elixir&logoColor=white)](https://elixir-lang.org)
 [![Phoenix](https://img.shields.io/badge/Phoenix-1.8-FD4F00?logo=phoenix&logoColor=white)](https://phoenixframework.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 </div>
+
+<p align="center">
+  <img src="https://socialify.git.ci/mingyar/discuss/image?description=1&font=Inter&forks=1&issues=1&language=1&name=1&owner=1&pattern=Bordered&pulls=1&stargazers=1&theme=Auto" alt="Discuss">
+</p>
 
 Sign in with GitHub, create topics, post comments — everything updates live across all connected users via WebSockets. No page refreshes needed.
 
