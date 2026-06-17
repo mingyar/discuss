@@ -183,6 +183,7 @@ defmodule Discuss.Discussions do
     topic = Repo.preload(topic, [:user, comments: [:user]])
 
     Phoenix.PubSub.broadcast(Discuss.PubSub, "topics", {event, topic})
+    Phoenix.PubSub.broadcast(Discuss.PubSub, "topic:#{topic.id}", {event, topic})
 
     result
   end

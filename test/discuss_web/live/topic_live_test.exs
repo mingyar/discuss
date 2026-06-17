@@ -270,5 +270,18 @@ defmodule DiscussWeb.TopicLiveTest do
       # Verify the flash message
       assert render(show_live) =~ "must be signed in"
     end
+
+    test "receives real-time topic title updates", %{conn: conn} do
+      user = user_fixture()
+      topic = topic_fixture(user)
+      {:ok, show_live, _html} = live(conn, ~p"/topics/#{topic}")
+
+      # Another user updates the topic
+      {:ok, _updated} =
+        Discussions.update_topic_by_user(user, topic, %{title: "Updated from broadcast"})
+
+      # The Show page should see the new title
+      assert has_element?(show_live, "h1", "Updated from broadcast")
+    end
   end
 end

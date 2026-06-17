@@ -162,6 +162,14 @@ defmodule DiscussWeb.TopicLive.Show do
      |> stream_delete(:comments, comment)}
   end
 
+  @impl true
+  def handle_info({:topic_updated, topic}, socket) do
+    {:noreply,
+     socket
+     |> assign(:topic, topic)
+     |> assign(:page_title, topic.title)}
+  end
+
   defp assign_comment_form(socket) do
     assign(socket, :comment_form, to_form(Discussions.change_comment(%Comment{})))
   end
