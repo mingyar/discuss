@@ -162,6 +162,25 @@ defmodule DiscussWeb.TopicLiveTest do
       # Verify flash message is shown
       assert render(index_live) =~ "You must be signed in"
     end
+
+    test "unauthenticated user cannot create comment via direct event on Index", %{conn: conn} do
+      topic = topic_fixture()
+
+      {:ok, index_live, _html} = live(conn, ~p"/topics")
+
+      # Attempt to create a comment by sending the event directly
+      index_live
+      |> render_hook("create_comment", %{
+        "topic-id" => to_string(topic.id),
+        "content" => "Hacked comment"
+      })
+
+      # The comment should NOT appear
+      refute has_element?(index_live, "#comments", "Hacked comment")
+
+      # Verify the flash message
+      assert render(index_live) =~ "must be signed in"
+    end
   end
 
   describe "Show" do
