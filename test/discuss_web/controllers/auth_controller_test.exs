@@ -73,12 +73,12 @@ defmodule DiscussWeb.AuthControllerTest do
     end
   end
 
-  describe "DELETE /auth/signout" do
-    test "signs out and clears session", %{conn: conn} do
+  describe "POST /auth/signout" do
+    test "signs out without JavaScript", %{conn: conn} do
       user = user_fixture()
       conn = conn |> Plug.Test.init_test_session(%{user_id: user.id})
 
-      conn = delete(conn, ~p"/auth/signout")
+      conn = post(conn, ~p"/auth/signout")
 
       assert redirected_to(conn) == ~p"/"
       assert flash(conn, :info) =~ "Signed out"
