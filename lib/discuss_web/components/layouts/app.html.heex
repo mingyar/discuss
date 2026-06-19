@@ -33,13 +33,15 @@
                 <span>{@current_user.name || @current_user.email}</span>
               </li>
               <li>
-                <.link
-                  href="/auth/signout"
-                  method="delete"
-                  class="text-error hover:text-error/80"
-                >
-                  Sign Out
-                </.link>
+                <form action="/auth/signout" method="post" class="block">
+                  <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+                  <button
+                    type="submit"
+                    class="w-full text-left text-error hover:text-error/80 cursor-pointer px-4 py-2"
+                  >
+                    Sign Out
+                  </button>
+                </form>
               </li>
             </ul>
           </details>
