@@ -283,5 +283,66 @@ defmodule DiscussWeb.TopicLiveTest do
       # The Show page should see the new title
       assert has_element?(show_live, "h1", "Updated from broadcast")
     end
+
+    test "edit with invalid data shows formatted changeset errors", %{conn: conn} do
+      user = user_fixture()
+      topic = topic_fixture(user)
+
+      conn = init_test_session(conn, user_id: user.id)
+
+      {:ok, show_live, _html} = live(conn, ~p"/topics/#{topic}")
+
+      # Enter edit mode by clicking the title
+      show_live |> element("h1", topic.title) |> render_click()
+
+      # Submit with empty title — triggers changeset validation error
+      show_live
+      |> form("form[phx-submit=save_edit]", %{topic_id: topic.id, title: "", content: ""})
+      |> render_submit()
+
+      # Page still renders the topic (not crashed) and error flash is shown
+      assert has_element?(show_live, "h1", topic.title)
+      assert has_element?(show_live, "#flash-error")
+      refute has_element?(show_live, "#flash-info", "Topic updated")
+    end
+
+    test "owner can delete their own comment", %{conn: conn} do
+      user = user_fixture()
+      topic = topic_fixture(user)
+      comment = comment_fixture(topic, user)
+
+      conn = init_test_session(conn, user_id: user.id)
+
+      {:ok, show_live, _html} = live(conn, ~p"/topics/#{topic}")
+
+      # Verify the comment is visible
+      assert has_element?(show_live, "#comments", comment.content)
+
+      # Click delete
+      show_live
+      |> element("button[aria-label='Delete comment']", "Delete")
+      |> render_click()
+
+      # Comment should disappear
+      refute has_element?(show_live, "#comments", comment.content)
+
+      # Flash confirms deletion
+      assert has_element?(show_live, "#flash-info", "Comment deleted")
+    end
+
+    test "non-owner cannot delete another user's comment", %{conn: conn} do
+      owner = user_fixture()
+      topic = topic_fixture(owner)
+      _comment = comment_fixture(topic, owner)
+
+      other_user = user_fixture()
+
+      conn = init_test_session(conn, user_id: other_user.id)
+
+      {:ok, show_live, _html} = live(conn, ~p"/topics/#{topic}")
+
+      # Non-owner should not see the delete button
+      refute has_element?(show_live, "button[aria-label='Delete comment']")
+    end
   end
 end
