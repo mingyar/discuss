@@ -38,14 +38,6 @@ defmodule DiscussWeb.TopicLive.Index do
     |> assign(:topic, nil)
   end
 
-  defp apply_action(socket, :new, _params) do
-    # Inline composer replaces the new-topic modal, redirect to index
-    socket
-    |> assign(:page_title, "Topics")
-    |> assign(:topic, nil)
-    |> push_navigate(to: ~p"/topics")
-  end
-
   @impl true
   def handle_info({:topic_created, topic}, socket) do
     {:noreply, stream_insert(socket, :topics, topic, at: 0)}
