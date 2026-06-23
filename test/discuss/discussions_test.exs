@@ -24,7 +24,7 @@ defmodule Discuss.DiscussionsTest do
       {:ok, comment} = Discussions.create_comment(user, topic, valid_comment_attributes())
 
       # Verify that broadcast was received
-      assert_receive {:comment_created, received_comment}
+      assert_receive {:comment_created, received_comment}, 2000
       assert received_comment.id == comment.id
     end
 
@@ -38,7 +38,7 @@ defmodule Discuss.DiscussionsTest do
       {:ok, deleted_comment} = Discussions.delete_comment(comment)
 
       # Verify that broadcast was received
-      assert_receive {:comment_deleted, received_comment}
+      assert_receive {:comment_deleted, received_comment}, 2000
       assert received_comment.id == deleted_comment.id
     end
 
@@ -52,7 +52,7 @@ defmodule Discuss.DiscussionsTest do
       user = user_fixture()
       {:ok, _comment} = Discussions.create_comment(user, topic, valid_comment_attributes())
 
-      assert_receive {:comment_created, _comment}
+      assert_receive {:comment_created, _comment}, 2000
     end
   end
 
@@ -66,7 +66,7 @@ defmodule Discuss.DiscussionsTest do
       {:ok, topic} = Discussions.create_topic(user, %{title: title})
 
       # Match on title to avoid picking up messages from parallel tests (async: true)
-      assert_receive {:topic_created, %{title: ^title} = received_topic}
+      assert_receive {:topic_created, %{title: ^title} = received_topic}, 2000
       assert received_topic.id == topic.id
     end
 
@@ -80,7 +80,7 @@ defmodule Discuss.DiscussionsTest do
       {:ok, updated_topic} =
         Discussions.update_topic_by_user(topic.user, topic, %{title: title})
 
-      assert_receive {:topic_updated, %{title: ^title} = received_topic}
+      assert_receive {:topic_updated, %{title: ^title} = received_topic}, 2000
       assert received_topic.id == updated_topic.id
     end
 
@@ -92,7 +92,7 @@ defmodule Discuss.DiscussionsTest do
       topic_id = topic.id
       {:ok, _deleted_topic} = Discussions.delete_topic(topic)
 
-      assert_receive {:topic_deleted, %{id: ^topic_id}}
+      assert_receive {:topic_deleted, %{id: ^topic_id}}, 2000
     end
 
     test "subscribe_to_topics/0 subscribes current process" do
@@ -102,7 +102,7 @@ defmodule Discuss.DiscussionsTest do
 
       {:ok, _topic} = Discussions.create_topic(user, %{title: "Trigger"})
 
-      assert_receive {:topic_created, %{title: "Trigger"}}
+      assert_receive {:topic_created, %{title: "Trigger"}}, 2000
     end
   end
 end

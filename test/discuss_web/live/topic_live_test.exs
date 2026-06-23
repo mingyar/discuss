@@ -57,8 +57,15 @@ defmodule DiscussWeb.TopicLiveTest do
       topic_fixture(user)
       {:ok, index_live, _html} = live(conn, ~p"/topics")
 
-      # Simulate another user creating a topic via PubSub broadcast
-      {:ok, topic} = Discussions.create_topic(user, %{title: "Real-time topic"})
+      # Simulate another user creating a topic — use Repo.insert! to avoid
+      # double-delivery via PubSub broadcast from Discussions.create_topic/2
+      topic =
+        %Discuss.Discussions.Topic{
+          title: "Real-time topic",
+          user_id: user.id
+        }
+        |> Repo.insert!()
+
       topic = Repo.preload(topic, [:user, :comments])
 
       send(index_live.pid, {:topic_created, topic})
@@ -74,11 +81,11 @@ defmodule DiscussWeb.TopicLiveTest do
       # Verify the topic is visible first
       assert has_element?(index_live, "#topics", topic.title)
 
-      # Simulate another user deleting the topic via PubSub broadcast
-      {:ok, deleted} = Discussions.delete_topic(topic)
-      deleted = Repo.preload(deleted, [:user, :comments])
+      # Simulate another user deleting the topic via direct send.
+      # Preload associations so the template can render user info.
+      topic = Repo.preload(topic, [:user, :comments])
 
-      send(index_live.pid, {:topic_deleted, deleted})
+      send(index_live.pid, {:topic_deleted, topic})
 
       refute has_element?(index_live, "#topics", topic.title)
     end
@@ -88,10 +95,9 @@ defmodule DiscussWeb.TopicLiveTest do
       topic = topic_fixture(user)
       {:ok, index_live, _html} = live(conn, ~p"/topics")
 
-      # Simulate topic being updated by another user via PubSub broadcast
-      {:ok, updated} =
-        Discussions.update_topic_by_user(topic.user, topic, %{title: "Updated from broadcast"})
-
+      # Simulate another user updating the topic via direct send —
+      # use Map.put to avoid PubSub broadcast from Discussions.update_topic_by_user/3
+      updated = %{topic | title: "Updated from broadcast"}
       updated = Repo.preload(updated, [:user, :comments])
 
       send(index_live.pid, {:topic_updated, updated})
@@ -198,9 +204,15 @@ defmodule DiscussWeb.TopicLiveTest do
       # Start editing by clicking the title
       show_live |> element("h1", topic.title) |> render_click()
 
-      # Now submit the updated title via the form
+      # Now submit the updated title via the form.
+      # Pass content explicitly (the form has a content textarea) so the
+      # handler's pattern match on %{"topic_id" => _, "title" => _, "content" => _} works.
       show_live
-      |> form("form[phx-submit=save_edit]", %{topic_id: topic.id, title: updated_title})
+      |> form("form[phx-submit=save_edit]", %{
+        topic_id: topic.id,
+        title: updated_title,
+        content: ""
+      })
       |> render_submit()
 
       assert has_element?(show_live, "h1", updated_title)

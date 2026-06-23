@@ -69,16 +69,20 @@ defmodule DiscussWeb.AuthControllerTest do
 
       # Email is required, so user creation fails and redirects to root
       assert redirected_to(conn) == ~p"/"
-      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Authentication failed"
+      assert flash(conn, :error) =~ "Authentication failed"
     end
   end
 
   describe "POST /auth/signout" do
-    test "signs out without JavaScript", %{conn: conn} do
+    test "signs out and clears session", %{conn: conn} do
       user = user_fixture()
-      conn = conn |> Plug.Test.init_test_session(%{user_id: user.id})
+      csrf_token = Plug.CSRFProtection.get_csrf_token()
 
-      conn = post(conn, ~p"/auth/signout")
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> put_req_header("x-csrf-token", csrf_token)
+        |> post(~p"/auth/signout")
 
       assert redirected_to(conn) == ~p"/"
       assert flash(conn, :info) =~ "Signed out"
