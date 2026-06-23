@@ -4,8 +4,7 @@ description: LiveView architecture specialist - component structure, real-time p
 #tools: Read, Grep, Glob
 disallowedTools: Write, Edit, NotebookEdit
 permissionMode: bypassPermissions
-model: big-pickle
-effort: medium
+effort: high
 maxTurns: 15
 omitClaudeMd: true
 skills:

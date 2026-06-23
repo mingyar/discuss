@@ -3,7 +3,27 @@
 ## Critical workflow
 
 - **`mix precommit`** runs: `compile --warnings-as-errors` → `deps.unlock --unused` → `format` → `test`. Use this before every commit.
-- **Never commit or push without asking.** Always ask "can I commit and push?" and wait for confirmation.
+
+### Branch workflow (MANDATORY — never bypass)
+
+1. **Create a feature branch first.** Never commit directly to `master`. Branch name convention: `fix/description` or `feat/description`.
+2. **Implement on the branch.** All work happens there.
+3. **Ask before every action** — each step requires explicit confirmation:
+   - "Can I commit?" → wait for answer before running `git commit`
+   - "Can I push?" → wait for answer before running `git push`
+   - "Can I open a pull request?" → wait for answer before running `gh pr create`
+4. **When opening a PR, assign the user as reviewer.** Use: `gh pr create --assignee @me` or assign the user specifically.
+5. **After PR is merged, delete the remote branch.**
+
+### Never
+
+- ❌ Commit directly to `master`
+- ❌ Push without asking
+- ❌ Open a PR without asking
+- ❌ Merge your own PR
+
+### Formatting
+
 - **Format HEEx carefully.** The `.formatter.exs` includes `Phoenix.LiveView.HTMLFormatter`. Long `<.link navigate={...}>` attributes must be split across multiple lines or CI (`mix format --check-formatted`) fails.
 
 ## Setup & environment
